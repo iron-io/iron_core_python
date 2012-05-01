@@ -9,9 +9,9 @@ except:
 class TestConfig(unittest.TestCase):
     def setUp(self):
         # Backup their ~/.iron.json file if it exists
-        if os.path.exists(os.path.join(os.environ["HOME"], ".iron.json")):
-            os.rename(os.path.join(os.environ["HOME"], ".iron.json"),
-                    os.path.join(os.environ["HOME"], ".iron.bak.json"))
+        if os.path.exists(os.path.expanduser(".iron.json")):
+            os.rename(os.path.expanduser(".iron.json"),
+                    os.path.expanduser(".iron.bak.json"))
 
         # Backup their ./iron.json file if it exists
         if os.path.exists("iron.json"):

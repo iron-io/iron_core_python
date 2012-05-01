@@ -45,7 +45,7 @@ class IronClient:
                 "token": None,
         }
         config = configFromFile(config,
-                os.path.join(os.environ["HOME"], ".iron.json"), product)
+                os.path.expanduser(".iron.json"), product)
         config = configFromEnv(config)
         config = configFromEnv(config, product)
         config = configFromFile(config, "iron.json", product)
