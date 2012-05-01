@@ -1,0 +1,1 @@
+{"iron_worker": {"protocol": "test-config-protocol", "host": "test-config-host", "token": "test-config-token", "project_id": "test-config-project-id", "port": "test-config-port", "api_version": "test-config-api-version"}}

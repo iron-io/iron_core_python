@@ -249,11 +249,13 @@ def configFromFile(config, path, product=None):
     except IOError, e:
         return config
     raw = json.loads(file.read())
+    for k in raw.keys():
+        if k in config:
+            config[k] = raw[k]
     if product is not None:
         if product in raw:
-            raw = raw[product]
-    for k in raw.keys():
-        config[k] = raw[k]
+            for k in raw[product].keys():
+                config[k] = raw[product][k]
     return config
 
 

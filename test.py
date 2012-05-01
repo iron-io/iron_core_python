@@ -105,5 +105,64 @@ class TestConfig(unittest.TestCase):
 
         os.remove("test_config.json")
 
+    def test_fromArgsConfigFileProduct(self):
+        test_config = {
+                "iron_worker": {
+                    "host": "test-config-host",
+                    "protocol": "test-config-protocol",
+                    "port": "test-config-port",
+                    "api_version": "test-config-api-version",
+                    "project_id": "test-config-project-id",
+                    "token": "test-config-token"
+                }
+        }
+
+        file = open("test_config.json", "w")
+        file.write(json.dumps(test_config))
+        file.close()
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                product="iron_worker", config_file="test_config.json")
+
+        self.assertEqual(client.host, test_config["iron_worker"]["host"])
+        self.assertEqual(client.protocol,
+                test_config["iron_worker"]["protocol"])
+        self.assertEqual(client.port, test_config["iron_worker"]["port"])
+        self.assertEqual(client.api_version,
+                test_config["iron_worker"]["api_version"])
+        self.assertEqual(client.project_id,
+                test_config["iron_worker"]["project_id"])
+        self.assertEqual(client.token, test_config["iron_worker"]["token"])
+
+    def test_fromArgsConfigFileMixed(self):
+        test_config = {
+                "host": "test-config-host-global",
+                "protocol": "test-config-protocol-global",
+                "port": "test-config-port-global",
+                "project_id": "test-config-project-id-global",
+                "iron_worker": {
+                    "api_version": "test-config-api-version-product",
+                    "project_id": "test-config-project-id-product",
+                    "token": "test-config-token-product"
+                }
+        }
+
+        file = open("test_config.json", "w")
+        file.write(json.dumps(test_config))
+        file.close()
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                product="iron_worker", config_file="test_config.json")
+
+        self.assertEqual(client.host, test_config["host"])
+        self.assertEqual(client.protocol, test_config["protocol"])
+        self.assertEqual(client.port, test_config["port"])
+        self.assertEqual(client.api_version,
+                test_config["iron_worker"]["api_version"])
+        self.assertEqual(client.project_id,
+                test_config["iron_worker"]["project_id"])
+        self.assertEqual(client.token, test_config["iron_worker"]["token"])
+
+
 if __name__ == "__main__":
     unittest.main()
