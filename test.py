@@ -134,6 +134,8 @@ class TestConfig(unittest.TestCase):
                 test_config["iron_worker"]["project_id"])
         self.assertEqual(client.token, test_config["iron_worker"]["token"])
 
+        os.remove("test_config.json")
+
     def test_fromArgsConfigFileMixed(self):
         test_config = {
                 "host": "test-config-host-global",
@@ -162,6 +164,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(client.project_id,
                 test_config["iron_worker"]["project_id"])
         self.assertEqual(client.token, test_config["iron_worker"]["token"])
+
+        os.remove("test_config.json")
 
 
 if __name__ == "__main__":
