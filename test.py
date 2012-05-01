@@ -1,7 +1,10 @@
 import iron_core
 import unittest
 import os
-
+try:
+    import json
+except:
+    import simplejson as json
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
@@ -76,6 +79,31 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(client.port, 80)
         self.assertEqual(client.protocol, "http")
 
+    def test_fromArgsConfigFileGlobal(self):
+        test_config = {
+                "host": "test-config-host",
+                "protocol": "test-config-protocol",
+                "port": "test-config-port",
+                "api_version": "test-config-api-version",
+                "project_id": "test-config-project-id",
+                "token": "test-config-token"
+        }
+
+        file = open("test_config.json", "w")
+        file.write(json.dumps(test_config))
+        file.close()
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                product="iron_worker", config_file="test_config.json")
+
+        self.assertEqual(client.host, test_config["host"])
+        self.assertEqual(client.protocol, test_config["protocol"])
+        self.assertEqual(client.port, test_config["port"])
+        self.assertEqual(client.api_version, test_config["api_version"])
+        self.assertEqual(client.project_id, test_config["project_id"])
+        self.assertEqual(client.token, test_config["token"])
+
+        os.remove("test_config.json")
 
 if __name__ == "__main__":
     unittest.main()

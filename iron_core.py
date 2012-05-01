@@ -4,7 +4,7 @@ import os
 try:
     import json
 except:
-    import simplejson
+    import simplejson as json
 
 
 class TooManyRetriesError(Exception):
@@ -249,11 +249,11 @@ def configFromFile(config, path, product=None):
     except IOError, e:
         return config
     raw = json.loads(file.read())
-    if product is None:
-        product = "iron"
-    if product in raw:
-        for k, v in raw[product]:
-            config[k] = v
+    if product is not None:
+        if product in raw:
+            raw = raw[product]
+    for k in raw.keys():
+        config[k] = raw[k]
     return config
 
 
