@@ -1,5 +1,10 @@
 import httplib
 import time
+import os
+try:
+    import json
+except:
+    import simplejson
 
 
 class TooManyRetriesError(Exception):
@@ -7,37 +12,64 @@ class TooManyRetriesError(Exception):
         return repr("Max retries reached. Aborting.")
 
 
-class ServiceUnavailable(Exception):
-    def __str__(self):
-        return repr("503 error from server.")
-
-
 class IronClient:
-    def __init__(self, name, version, host, project_id, token, protocol, port,
-            api_version):
+    def __init__(self, name, version, product, host=None, project_id=None,
+            token=None, protocol=None, port=None, api_version=None,
+            config_file=None):
         """Prepare a Client that can make HTTP calls and return it.
-        
+
         Keyword arguments:
         name -- the name of the client. Required.
         version -- the version of the client. Required.
-        host -- the default domain the client will be requesting. Required.
+        product -- the name of the product the client will access. Required.
+        host -- the default domain the client will be requesting. Defaults
+                to None.
         project_id -- the project ID the client will be requesting. Can be
-                      found on http://hud.iron.io. Required.
-        token -- an API token found on http://hud.iron.io. Required.
+                      found on http://hud.iron.io. Defaults to None.
+        token -- an API token found on http://hud.iron.io. Defaults to None.
         protocol -- The default protocol the client will use for its requests.
-                    Required.
-        port -- The default port the client will use for its requests. Required.
+                    Defaults to None.
+        port -- The default port the client will use for its requests. Defaults
+                to None.
         api_version -- The version of the API the client will use for its
-                       requests. Required.
+                       requests. Defaults to None.
+        config_file -- The config file to load configuration from. Defaults to
+                       None.
         """
+        config = {
+                "host": None,
+                "protocol": "https",
+                "port": 443,
+                "api_version": None,
+                "project_id": None,
+                "token": None,
+        }
+        config = configFromFile(config,
+                os.path.join(os.environ["HOME"], ".iron.json"), product)
+        config = configFromEnv(config)
+        config = configFromEnv(config, product)
+        config = configFromFile(config, "iron.json", product)
+        config = configFromFile(config, config_file, product)
+        config = configFromArgs(config, host=host, project_id=project_id,
+                token=token, protocol=protocol, port=port,
+                api_version=api_version)
+
+        required_fields = ["host", "api_version", "project_id", "token"]
+
+        for field in required_fields:
+            if config[field] is None:
+                raise ValueError("No %s set. %s is a required field." % (field,
+                    field))
+
         self.name = name
         self.version = version
-        self.host = host
-        self.project_id = project_id
-        self.token = token
-        self.protocol = protocol
-        self.port = int(port)
-        self.api_version = api_version
+        self.product = product
+        self.host = config["host"]
+        self.project_id = config["project_id"]
+        self.token = config["token"]
+        self.protocol = config["protocol"]
+        self.port = config["port"]
+        self.api_version = config["api_version"]
         self.headers = {
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
@@ -56,7 +88,7 @@ class IronClient:
     def retry(f, exceptionToCheck, tries=5, delay=.5, backoff=2, logger=None,
             exceptionToRaise=TooManyRetriesError):
         """A decorator to implement exponential backoff in other functions.
-        
+
         Keyword arguments:
         f -- The function. Automatically supplied when retry is a decorator.
              Required.
@@ -117,7 +149,7 @@ class IronClient:
                 raise exceptionToRaise
             return f_retry
         return deco_retry
-    
+
     def request(self, url, method, body="", headers={}):
         """Execute an HTTP request and return a dict containing the response
         and the response status code.
@@ -142,9 +174,9 @@ class IronClient:
             conn = httplib.HTTPSConnection(self.host, self.port)
         else:
             raise ValueError("Invalid protocol.")
-        
+
         url = self.base_url + url
-        
+
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
         result = {}
@@ -152,11 +184,11 @@ class IronClient:
         result["status"] = resp.status
         conn.close()
         return result
-    
+
     def get(self, url, headers={}):
         """Execute an HTTP GET request and return a dict containing the
         response and the response status code.
-        
+
         Keyword arguments:
         url -- The path to execute the result against, not including the API
                version or project ID, with no leading /. Required.
@@ -164,11 +196,11 @@ class IronClient:
                    defaults. Defaults to {}.
         """
         return self.request(url=url, method="GET", headers=headers)
-    
+
     def post(self, url, body="", headers={}):
         """Execute an HTTP POST request and return a dict containing the
         response and the response status code.
-        
+
         Keyword arguments:
         url -- The path to execute the result against, not including the API
                version or project ID, with no leading /. Required.
@@ -177,15 +209,13 @@ class IronClient:
         headers -- HTTP Headers to send with the request. Can overwrite the
                    defaults. Defaults to {}.
         """
-        if headers == None:
-            headers = {}
         headers["Content-Length"] = len(body)
         return self.request(url=url, method="POST", body=body, headers=headers)
-    
+
     def delete(self, url, headers={}):
         """Execute an HTTP DELETE request and return a dict containing the
         response and the response status code.
-        
+
         Keyword arguments:
         url -- The path to execute the result against, not including the API
                version or project ID, with no leading /. Required.
@@ -207,3 +237,38 @@ class IronClient:
                 defaults. Defaults to {}.
         """
         return self.request(url=url, method="PUT", body=body, headers=headers)
+
+
+def configFromFile(config, path, product=None):
+    if path is None:
+        return config
+    if not os.path.exists(path):
+        return config
+    try:
+        file = open(path, "r")
+    except IOError, e:
+        return config
+    raw = json.loads(file.read())
+    if product is None:
+        product = "iron"
+    if product in raw:
+        for k, v in raw[product]:
+            config[k] = v
+    return config
+
+
+def configFromEnv(config, product=None):
+    if product is None:
+        product = "iron"
+    for k in config.keys():
+        key = "%s_%s" % (product, config[k])
+        if key.upper() in os.environ:
+            config[k] = os.environ[key.upper()]
+    return config
+
+
+def configFromArgs(config, **kwargs):
+    for k in kwargs:
+        if kwargs[k] is not None:
+            config[k] = kwargs[k]
+    return config
