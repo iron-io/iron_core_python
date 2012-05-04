@@ -113,6 +113,10 @@ class IronClient:
         else:
             headers = self.headers
 
+        headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
+                        v.encode('ascii') if isinstance(v, unicode) else v)
+                        for k, v in headers.items())
+
         if self.protocol == "http":
             conn = httplib.HTTPConnection(self.host, self.port)
         elif self.protocol == "https":
@@ -121,6 +125,8 @@ class IronClient:
             raise ValueError("Invalid protocol.")
 
         url = self.base_url + url
+        if isinstance(url, unicode):
+            url = url.encode('ascii')
 
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
