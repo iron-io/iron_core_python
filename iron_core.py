@@ -7,6 +7,11 @@ except:
     import simplejson as json
 
 
+class ServiceUnavailable(Exception):
+    def __str__(self):
+        return repr("Service unavailable. Please try again.")
+
+
 class TooManyRetriesError(Exception):
     def __str__(self):
         return repr("Max retries reached. Aborting.")
@@ -44,6 +49,20 @@ class IronClient:
                 "project_id": None,
                 "token": None,
         }
+        products = {
+                "iron_worker": {
+                    "host": "worker-aws-us-east-1.iron.io",
+                    "version": 2
+                },
+                "iron_mq": {
+                    "host": "mq-aws-us-east-1.iron.io",
+                    "version": 2
+                }
+        }
+        if product in products:
+            config["host"] = products[product]["host"]
+            config["api_version"] = products[product]["version"]
+
         config = configFromFile(config,
                 os.path.expanduser(".iron.json"), product)
         config = configFromEnv(config)
@@ -54,7 +73,7 @@ class IronClient:
                 token=token, protocol=protocol, port=port,
                 api_version=api_version)
 
-        required_fields = ["host", "api_version", "project_id", "token"]
+        required_fields = ["project_id", "token"]
 
         for field in required_fields:
             if config[field] is None:
@@ -84,73 +103,7 @@ class IronClient:
             raise ValueError("Invalid port (%s) for an HTTPS request. Want %s."
                     % (self.port, httplib.HTTPS_PORT))
 
-    @classmethod
-    def retry(f, exceptionToCheck, tries=5, delay=.5, backoff=2, logger=None,
-            exceptionToRaise=TooManyRetriesError):
-        """A decorator to implement exponential backoff in other functions.
-
-        Keyword arguments:
-        f -- The function. Automatically supplied when retry is a decorator.
-             Required.
-        exceptionToCheck -- The exception class that should trigger a retry.
-        tries -- The maximum number of times to try. Defaults to 5.
-        delay -- The initial delay (in seconds) before retrying. Defaults
-                 to .5.
-        backoff -- The number to multiply delay by after every failure.
-                   Defaults to 2.
-        logger -- an instance of logging to log debug info to. Defaults
-                  to None.
-        exceptionToRaise -- The exception class that should be raised after
-                            tries has been reached. Defaults to
-                            iron_core.TooManyRetriesError.
-        """
-        if backoff <= 1:
-                raise ValueError("backoff must be greater than 1")
-
-        if tries < 0:
-                raise ValueError("tries must be 0 or greater")
-
-        if delay <= 0:
-                raise ValueError("delay must be greater than 0")
-
-        def deco_retry(f):
-            def f_retry(*args, **kwargs):
-                # makes args modifiable
-                mtries = tries
-                mdelay = delay
-                done = False
-                rv = None
-                while mtries > 0 and not done:
-                    try_msg = "Attempt #%s" % (tries - mtries + 1)
-                    try:
-                        if logger:
-                            logger.debug(try_msg)
-                        rv = f(*args, **kwargs)
-                        done = True
-                    except exceptionToCheck, e:
-                        err_s = ""
-                        if "%s" % e != "":
-                            err_s = " (\"%s\")" % e
-                        try_s = ""
-                        if mtries > 1:
-                            try_s = " Retrying after %s seconds." % mdelay
-                        if logger:
-                            logger.debug("Failed%s.%s", err_s, try_s)
-                        rv = None
-                        done = False
-                        if mtries > 1:
-                            time.sleep(mdelay)
-                            mdelay *= backoff
-                        mtries -= 1
-                if done:
-                    if logger:
-                        logger.debug("Success! Returning.")
-                    return rv
-                raise exceptionToRaise
-            return f_retry
-        return deco_retry
-
-    def request(self, url, method, body="", headers={}):
+    def request(self, url, method, body="", headers={}, retry=True):
         """Execute an HTTP request and return a dict containing the response
         and the response status code.
 
@@ -162,6 +115,8 @@ class IronClient:
                 Defaults to an empty string.
         headers -- HTTP Headers to send with the request. Can overwrite the
                    defaults. Defaults to {}.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
         """
         if headers:
             headers = dict(list(headers.items()) + list(self.headers.items()))
@@ -183,9 +138,38 @@ class IronClient:
         result["body"] = resp.read()
         result["status"] = resp.status
         conn.close()
+
+        exceptions = [
+                httplib.UNAUTHORIZED,
+                httplib.NOT_FOUND,
+                httplib.METHOD_NOT_ALLOWED,
+                httplib.NOT_ACCEPTABLE,
+                httplib.INTERNAL_SERVER_ERROR
+        ]
+        if resp.status >= 400 and resp.status != httplib.SERVICE_UNAVAILABLE:
+            raise httplib.HTTPException("%s: %s (%s)" %
+                    (resp.status, resp.reason, url))
+        if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
+            tries = 5
+            delay = .5
+            backoff = 2
+            while resp.status is httplib.SERVICE_UNAVAILABLE and tries > 0:
+                tries -= 1
+                time.sleep(delay)
+                delay *= backoff
+                conn.request(method, url, body, headers)
+                resp = conn.getresponse()
+                result = {}
+                result["body"] = resp.read()
+                result["status"] = resp.status
+                conn.close()
+            if resp.status is httplib.SERVICE_UNAVAILABLE:
+                raise TooManyRetriesError
+        elif not retry:
+            raise ServiceUnavailable()
         return result
 
-    def get(self, url, headers={}):
+    def get(self, url, headers={}, retry=True):
         """Execute an HTTP GET request and return a dict containing the
         response and the response status code.
 
@@ -194,10 +178,13 @@ class IronClient:
                version or project ID, with no leading /. Required.
         headers -- HTTP Headers to send with the request. Can overwrite the
                    defaults. Defaults to {}.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
         """
-        return self.request(url=url, method="GET", headers=headers)
+        return self.request(url=url, method="GET", headers=headers,
+                retry=retry)
 
-    def post(self, url, body="", headers={}):
+    def post(self, url, body="", headers={}, retry=True):
         """Execute an HTTP POST request and return a dict containing the
         response and the response status code.
 
@@ -208,11 +195,14 @@ class IronClient:
                 Defaults to an empty string.
         headers -- HTTP Headers to send with the request. Can overwrite the
                    defaults. Defaults to {}.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
         """
         headers["Content-Length"] = len(body)
-        return self.request(url=url, method="POST", body=body, headers=headers)
+        return self.request(url=url, method="POST", body=body, headers=headers,
+                retry=retry)
 
-    def delete(self, url, headers={}):
+    def delete(self, url, headers={}, retry=True):
         """Execute an HTTP DELETE request and return a dict containing the
         response and the response status code.
 
@@ -221,10 +211,13 @@ class IronClient:
                version or project ID, with no leading /. Required.
         headers -- HTTP Headers to send with the request. Can overwrite the
                    defaults. Defaults to an empty dict.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
         """
-        return self.request(url=url, method="DELETE", headers=headers)
+        return self.request(url=url, method="DELETE", headers=headers,
+                retry=retry)
 
-    def put(self, url, body="", headers={}):
+    def put(self, url, body="", headers={}, retry=True):
         """Execute an HTTP PUT request and return a dict containing the
         response and the response status code.
 
@@ -235,8 +228,11 @@ class IronClient:
                 Defaults to an empty string.
         headers -- HTTP Headers to send with the request. Can overwrite the
                 defaults. Defaults to {}.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
         """
-        return self.request(url=url, method="PUT", body=body, headers=headers)
+        return self.request(url=url, method="PUT", body=body, headers=headers,
+                retry=retry)
 
 
 def configFromFile(config, path, product=None):
@@ -263,7 +259,7 @@ def configFromEnv(config, product=None):
     if product is None:
         product = "iron"
     for k in config.keys():
-        key = "%s_%s" % (product, config[k])
+        key = "%s_%s" % (product, k)
         if key.upper() in os.environ:
             config[k] = os.environ[key.upper()]
     return config
