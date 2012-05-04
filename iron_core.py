@@ -139,9 +139,6 @@ class IronClient:
         result["status"] = resp.status
         conn.close()
 
-        if resp.status >= 400 and resp.status != httplib.SERVICE_UNAVAILABLE:
-            raise httplib.HTTPException("%s: %s (%s)" %
-                    (resp.status, resp.reason, url))
         if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
             tries = 5
             delay = .5
@@ -156,10 +153,11 @@ class IronClient:
                 result["body"] = resp.read()
                 result["status"] = resp.status
                 conn.close()
-            if resp.status is httplib.SERVICE_UNAVAILABLE:
-                raise TooManyRetriesError
-        elif not retry:
-            raise ServiceUnavailable()
+
+        if resp.status >= 400:
+            raise httplib.HTTPException("%s: %s (%s)" %
+                    (resp.status, resp.reason, url))
+
         return result
 
     def get(self, url, headers={}, retry=True):
