@@ -9,9 +9,9 @@ except:
 class TestConfig(unittest.TestCase):
     def setUp(self):
         # Backup their ~/.iron.json file if it exists
-        if os.path.exists(os.path.expanduser(".iron.json")):
-            os.rename(os.path.expanduser(".iron.json"),
-                    os.path.expanduser(".iron.bak.json"))
+        if os.path.exists(os.path.expanduser("~/.iron.json")):
+            os.rename(os.path.expanduser("~/.iron.json"),
+                    os.path.expanduser("~/.iron.bak.json"))
 
         # Backup their ./iron.json file if it exists
         if os.path.exists("iron.json"):
@@ -38,16 +38,6 @@ class TestConfig(unittest.TestCase):
         self.assertRaises(ValueError, iron_core.IronClient, name="Test",
                 version="0.1.0", product="iron_worker", api_version=2,
                 host="worker-aws-us-east-1.iron.io", token="TEST")
-
-    def test_fromArgsMissingAPIVersion(self):
-        self.assertRaises(ValueError, iron_core.IronClient, name="Test",
-                version="0.1.0", product="iron_worker", token="TEST",
-                host="worker-aws-us-east-1.iron.io", project_id="TEST")
-
-    def test_fromArgsMissingHost(self):
-        self.assertRaises(ValueError, iron_core.IronClient, name="Test",
-                version="0.1.0", product="iron_worker", token="TEST",
-                api_version=2, project_id="TEST")
 
     def test_fromArgsProtocolPortMismatch(self):
         self.assertRaises(ValueError, iron_core.IronClient, name="Test",
