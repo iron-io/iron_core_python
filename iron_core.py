@@ -139,13 +139,6 @@ class IronClient:
         result["status"] = resp.status
         conn.close()
 
-        exceptions = [
-                httplib.UNAUTHORIZED,
-                httplib.NOT_FOUND,
-                httplib.METHOD_NOT_ALLOWED,
-                httplib.NOT_ACCEPTABLE,
-                httplib.INTERNAL_SERVER_ERROR
-        ]
         if resp.status >= 400 and resp.status != httplib.SERVICE_UNAVAILABLE:
             raise httplib.HTTPException("%s: %s (%s)" %
                     (resp.status, resp.reason, url))
