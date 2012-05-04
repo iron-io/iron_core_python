@@ -7,16 +7,6 @@ except:
     import simplejson as json
 
 
-class ServiceUnavailable(Exception):
-    def __str__(self):
-        return repr("Service unavailable. Please try again.")
-
-
-class TooManyRetriesError(Exception):
-    def __str__(self):
-        return repr("Max retries reached. Aborting.")
-
-
 class IronClient:
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
