@@ -64,7 +64,7 @@ class IronClient:
             config["api_version"] = products[product]["version"]
 
         config = configFromFile(config,
-                os.path.expanduser(".iron.json"), product)
+                os.path.expanduser("~/.iron.json"), product)
         config = configFromEnv(config)
         config = configFromEnv(config, product)
         config = configFromFile(config, "iron.json", product)
@@ -155,8 +155,15 @@ class IronClient:
                 conn.close()
 
         if resp.status >= 400:
+            message = resp.reason
+            if result["body"] != "":
+                try:
+                    result_data = json.loads(result["body"])
+                    message = result_data["msg"]
+                except:
+                    pass
             raise httplib.HTTPException("%s: %s (%s)" %
-                    (resp.status, resp.reason, url))
+                    (resp.status, message, url))
 
         return result
 
