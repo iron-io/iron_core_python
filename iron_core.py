@@ -46,7 +46,11 @@ class IronClient:
                 },
                 "iron_mq": {
                     "host": "mq-aws-us-east-1.iron.io",
-                    "version": 2
+                    "version": 1
+                },
+                "iron_cache": {
+                    "host": "cache-aws-us-east-1.iron.io",
+                    "version": 1
                 }
         }
         if product in products:
