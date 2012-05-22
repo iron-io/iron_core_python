@@ -135,8 +135,10 @@ class IronClient:
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
         result = {}
-        result["body"] = resp.read()
+        result["raw_body"] = resp.read()
+        result["body"] = result["raw_body"]
         result["status"] = resp.status
+        result["content-type"] = resp.getheader("Content-Type")
         conn.close()
 
         if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
@@ -152,16 +154,16 @@ class IronClient:
                 result = {}
                 result["body"] = resp.read()
                 result["status"] = resp.status
+                result["content-type"] = resp.getheader("Content-Type")
                 conn.close()
+
+        if result["content-type"] == "application/json":
+            result["body"] = json.loads(result["body"])
 
         if resp.status >= 400:
             message = resp.reason
-            if result["body"] != "":
-                try:
-                    result_data = json.loads(result["body"])
-                    message = result_data["msg"]
-                except:
-                    pass
+            if result["content-type"] == "application/json":
+                message = result["body"]["msg"]
             raise httplib.HTTPException("%s: %s (%s)" %
                     (resp.status, message, url))
 
