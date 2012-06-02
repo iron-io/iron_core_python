@@ -135,8 +135,13 @@ class IronClient:
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
         result = {}
-        result["body"] = resp.read()
+        body = resp.read()
+        try:
+            result["body"] = json.loads(body)
+        except:
+            result["body"] = body
         result["status"] = resp.status
+        result["resp"] = resp
         conn.close()
 
         if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
