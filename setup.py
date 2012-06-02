@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-        name = "IronCore",
+        name = "iron-core",
         py_modules = ["iron_core"],
         version = "0.1.0",
         description = "Universal classes and methods for Iron.io API wrappers to build on.",
