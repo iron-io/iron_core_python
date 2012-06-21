@@ -244,15 +244,22 @@ class IronClient:
     @staticmethod
     def fromRfc3339(timestamp=None):
         if timestamp is None:
-            timestamp = time.gmtime()
+            timestamp = datetime.now()
             return timestamp
         return iso8601.parse_date(timestamp)
 
     @staticmethod
     def toRfc3339(timestamp=None):
         if timestamp is None:
-            timestamp = time.now()
+            timestamp = datetime.now()
         return timestamp.isoformat()
+
+    @staticmethod
+    def fromTimestamp(timestamp=None):
+        if timestamp is None:
+            timestamp = time.now()
+            return timestamp
+        return datetime.fromtimestamp(float(timestamp))
 
 def configFromFile(config, path, product=None):
     if path is None:
