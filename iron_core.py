@@ -1,6 +1,8 @@
 import httplib
 import time
+from datetime import datetime
 import os
+import iso8601
 try:
     import json
 except:
@@ -135,9 +137,10 @@ class IronClient:
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
         result = {}
-        result["raw_body"] = resp.read()
-        result["body"] = result["raw_body"]
+        body = resp.read()
+        result["body"] = body
         result["status"] = resp.status
+        result["resp"] = resp
         result["content-type"] = resp.getheader("Content-Type")
         conn.close()
 
@@ -158,7 +161,10 @@ class IronClient:
                 conn.close()
 
         if result["content-type"] == "application/json":
-            result["body"] = json.loads(result["body"])
+            try:
+                result["body"] = json.loads(result["body"])
+            except:
+                pass
 
         if resp.status >= 400:
             message = resp.reason
@@ -234,6 +240,19 @@ class IronClient:
         return self.request(url=url, method="PUT", body=body, headers=headers,
                 retry=retry)
 
+
+    @staticmethod
+    def fromRfc3339(timestamp=None):
+        if timestamp is None:
+            timestamp = time.gmtime()
+            return timestamp
+        return iso8601.parse_date(timestamp)
+
+    @staticmethod
+    def toRfc3339(timestamp=None):
+        if timestamp is None:
+            timestamp = time.now()
+        return timestamp.isoformat()
 
 def configFromFile(config, path, product=None):
     if path is None:
