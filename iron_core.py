@@ -204,7 +204,7 @@ class IronClient:
         retry -- Whether exponential backoff should be employed. Defaults
                  to True.
         """
-        headers["Content-Length"] = len(body)
+        headers["Content-Length"] = str(len(body))
         return self.request(url=url, method="POST", body=body, headers=headers,
                 retry=retry)
 
