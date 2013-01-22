@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import os
 import iso8601
+import urlparse
 try:
     import json
 except:
@@ -12,7 +13,7 @@ except:
 class IronClient:
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
-            config_file=None):
+            config_file=None, create_project=False, project_name=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -22,7 +23,8 @@ class IronClient:
         host -- the default domain the client will be requesting. Defaults
                 to None.
         project_id -- the project ID the client will be requesting. Can be
-                      found on http://hud.iron.io. Defaults to None.
+                      found on http://hud.iron.io. Required unless
+                      create_project is True.
         token -- an API token found on http://hud.iron.io. Defaults to None.
         protocol -- The default protocol the client will use for its requests.
                     Defaults to None.
@@ -32,6 +34,10 @@ class IronClient:
                        requests. Defaults to None.
         config_file -- The config file to load configuration from. Defaults to
                        None.
+        create_project -- If set to True, a new project will be created.
+                          Defaults to False.
+        project_name -- The name of the new project to create. Only applies
+                        if create_project is enabled.
         """
         config = {
                 "host": None,
@@ -67,12 +73,16 @@ class IronClient:
         config = configFromFile(config, config_file, product)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
-                api_version=api_version)
+                api_version=api_version, create_project=create_project,
+                project_name=project_name)
 
-        required_fields = ["project_id", "token"]
+        required_fields = ["token", "project_id"]
+        if create_project:
+            # project_id is no longer a required field, project_name required
+            required_fields = ["token", "project_name"]
 
         for field in required_fields:
-            if config[field] is None:
+            if field not in config or config[field] is None:
                 raise ValueError("No %s set. %s is a required field." % (field,
                     field))
 
@@ -80,7 +90,6 @@ class IronClient:
         self.version = version
         self.product = product
         self.host = config["host"]
-        self.project_id = config["project_id"]
         self.token = config["token"]
         self.protocol = config["protocol"]
         self.port = config["port"]
@@ -93,11 +102,20 @@ class IronClient:
             self.headers["Authorization"] = "OAuth %s" % self.token
         self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
                 self.port, self.api_version)
-        if self.project_id:
-            self.base_url += "projects/%s/" % self.project_id
         if self.protocol == "https" and self.port != httplib.HTTPS_PORT:
             raise ValueError("Invalid port (%s) for an HTTPS request. Want %s."
                     % (self.port, httplib.HTTPS_PORT))
+        if create_project:
+            body = json.dumps({'name': project_name})
+            url = 'https://%s/%d/projects' % (
+                products['iron_worker']['host'],
+                products['iron_worker']['version'])
+            result = self.post(url, body)
+            self.project_id = result['body']['id']
+        else:
+            self.project_id = config["project_id"]
+
+        self.base_url += "projects/%s/" % self.project_id
 
     def request(self, url, method, body="", headers={}, retry=True):
         """Execute an HTTP request and return a dict containing the response
@@ -123,22 +141,34 @@ class IronClient:
                         v.encode('ascii') if isinstance(v, unicode) else v)
                         for k, v in headers.items())
 
-        if self.protocol == "http":
-            conn = httplib.HTTPConnection(self.host, self.port)
-        elif self.protocol == "https":
-            conn = httplib.HTTPSConnection(self.host, self.port)
-        else:
-            raise ValueError("Invalid protocol.")
 
-        url = self.base_url + url
-        if isinstance(url, unicode):
-            url = url.encode('ascii')
+        if url.startswith("http"):
+            # Full URL has been specified. Ignore self.protocol, self.port
+            # self.host, etc.
+            url_parts = urlparse.urlparse(url)
+            if url_parts.scheme == 'http':
+                conn = httplib.HTTPConnection(url_parts.netloc,
+                                              url_parts.port or 80)
+            else:
+                conn = httplib.HTTPSConnection(url_parts.netloc,
+                                               url_parts.port or 443)
+        else:
+            if self.protocol == "http":
+                conn = httplib.HTTPConnection(self.host, self.port)
+            elif self.protocol == "https":
+                conn = httplib.HTTPSConnection(self.host, self.port)
+            else:
+                raise ValueError("Invalid protocol.")
+
+            url = self.base_url + url
+            if isinstance(url, unicode):
+                url = url.encode('ascii')
 
         conn.request(method, url, body, headers)
         resp = conn.getresponse()
         result = {}
-        body = resp.read()
-        result["body"] = body
+        response_body = resp.read()
+        result["body"] = response_body
         result["status"] = resp.status
         result["resp"] = resp
         result["content-type"] = resp.getheader("Content-Type")
@@ -205,6 +235,7 @@ class IronClient:
                  to True.
         """
         headers["Content-Length"] = str(len(body))
+        headers["Content-Type"] = "application/json"
         return self.request(url=url, method="POST", body=body, headers=headers,
                 retry=retry)
 
