@@ -69,7 +69,8 @@ class IronClient:
                 token=token, protocol=protocol, port=port,
                 api_version=api_version)
 
-        required_fields = ["project_id", "token"]
+        #required_fields = ["project_id", "token"]
+	required_fields = ["token"]
 
         for field in required_fields:
             if config[field] is None:
@@ -99,7 +100,8 @@ class IronClient:
             raise ValueError("Invalid port (%s) for an HTTPS request. Want %s."
                     % (self.port, httplib.HTTPS_PORT))
 
-    def request(self, url, method, body="", headers={}, retry=True):
+    def request(self, url, method, body="", headers={}, retry=True,
+                project_id_optional=False):
         """Execute an HTTP request and return a dict containing the response
         and the response status code.
 
@@ -114,6 +116,8 @@ class IronClient:
         retry -- Whether exponential backoff should be employed. Defaults
                  to True.
         """
+	if not project_id_optional and self.project_id is None:
+		raise ValueError("No project_id set. project_id is a required field.")
         if headers:
             headers = dict(list(headers.items()) + list(self.headers.items()))
         else:
@@ -239,6 +243,17 @@ class IronClient:
         """
         return self.request(url=url, method="PUT", body=body, headers=headers,
                 retry=retry)
+
+    def project(self, name, retry=True):
+        """Execute an HTTP POST request to create a new project and return 
+	a dict containing the response and the response status code.
+
+	Keyword arguments:
+	name -- The name to give the new project. Required.
+	retry -- Whether exponential backoff should be employed. Defaults 
+	         to True.
+	"""
+	return self.request(url="projects", method="POST", body=json.dumps({"name": name}), headers={"Content-Type": "application/json"}, retry=retry, project_id_optional=True)
 
 
     @staticmethod

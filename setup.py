@@ -4,7 +4,7 @@ setup(
         name = "iron-core",
         py_modules = ["iron_core"],
         install_requires=["iso8601"],
-        version = "0.1.0",
+        version = "0.2.0",
         description = "Universal classes and methods for Iron.io API wrappers to build on.",
         author = "Iron.io",
         author_email = "thirdparty@iron.io",
