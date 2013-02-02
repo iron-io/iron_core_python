@@ -14,7 +14,7 @@ class IronClient:
 
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
-            config_file=None):
+	    reuse=False, config_file=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -32,6 +32,9 @@ class IronClient:
                 to None.
         api_version -- The version of the API the client will use for its
                        requests. Defaults to None.
+        reuse -- Whether connections should be reused or closed after each 
+	         request. Defaults to False, meaning closed after each
+		 request.
         config_file -- The config file to load configuration from. Defaults to
                        None.
         """
@@ -79,6 +82,7 @@ class IronClient:
                     field))
 
         self.name = name
+	self.reuse = reuse
         self.version = version
         self.product = product
         self.host = config["host"]
@@ -141,7 +145,6 @@ class IronClient:
             self.conn.request(method, url, body, headers)
             resp = self.conn.getresponse()
 	except httplib.NotConnected:
-            print "Not connected"
             if self.protocol == "http":
                 self.conn = httplib.HTTPConnection(self.host, self.port)
             elif self.protocol == "https":
@@ -177,6 +180,9 @@ class IronClient:
                 result["body"] = json.loads(result["body"])
             except:
                 pass
+
+	if not self.reuse:
+            self.conn.close()
 
         if resp.status >= 400:
             message = resp.reason
