@@ -10,6 +10,8 @@ except:
 
 
 class IronClient:
+    conn = None
+
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
             config_file=None):
@@ -124,25 +126,36 @@ class IronClient:
                         for k, v in headers.items())
 
         if self.protocol == "http":
-            conn = httplib.HTTPConnection(self.host, self.port)
+	    if self.conn is None:
+                self.conn = httplib.HTTPConnection(self.host, self.port)
         elif self.protocol == "https":
-            conn = httplib.HTTPSConnection(self.host, self.port)
+	    if self.conn is None:
+                self.conn = httplib.HTTPSConnection(self.host, self.port)
         else:
             raise ValueError("Invalid protocol.")
 
         url = self.base_url + url
         if isinstance(url, unicode):
             url = url.encode('ascii')
-
-        conn.request(method, url, body, headers)
-        resp = conn.getresponse()
+        try:
+            self.conn.request(method, url, body, headers)
+            resp = self.conn.getresponse()
+	except httplib.NotConnected:
+            print "Not connected"
+            if self.protocol == "http":
+                self.conn = httplib.HTTPConnection(self.host, self.port)
+            elif self.protocol == "https":
+                self.conn = httplib.HTTPSConnection(self.host, self.port)
+            else:
+                raise ValueError("Invalid protocol.")
+            self.conn.request(method, url, body, headers)
+	    resp = self.conn.getresponse()
         result = {}
         body = resp.read()
         result["body"] = body
         result["status"] = resp.status
         result["resp"] = resp
         result["content-type"] = resp.getheader("Content-Type")
-        conn.close()
 
         if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
             tries = 5
@@ -158,7 +171,6 @@ class IronClient:
                 result["body"] = resp.read()
                 result["status"] = resp.status
                 result["content-type"] = resp.getheader("Content-Type")
-                conn.close()
 
         if result["content-type"] == "application/json":
             try:
@@ -240,6 +252,10 @@ class IronClient:
         return self.request(url=url, method="PUT", body=body, headers=headers,
                 retry=retry)
 
+    def close(self):
+        """Close the underlying connection."""
+        if self.conn is not None:
+            self.conn.close()
 
     @staticmethod
     def fromRfc3339(timestamp=None):
