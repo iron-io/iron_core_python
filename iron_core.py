@@ -1,8 +1,8 @@
-import httplib
 import time
 from datetime import datetime
 import os
 import iso8601
+import requests
 try:
     import json
 except:
@@ -95,9 +95,22 @@ class IronClient:
                 self.port, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
-        if self.protocol == "https" and self.port != httplib.HTTPS_PORT:
+        if self.protocol == "https" and self.port != 443:
             raise ValueError("Invalid port (%s) for an HTTPS request. Want %s."
-                    % (self.port, httplib.HTTPS_PORT))
+                    % (self.port, 443))
+
+    def _doRequest(self, url, method, body="", headers={}):
+        if method == "GET":
+            r = requests.get(url, headers=headers)
+        elif method == "POST":
+            r = requests.post(url, data=body, headers=headers)
+        elif method == "PUT":
+            r = requests.put(url, data=body, headers=headers)
+        elif method == "DELETE":
+            r = requests.delete(url, headers=headers)
+        else:
+            raise ValueError("Invalid HTTP method")
+        return r
 
     def request(self, url, method, body="", headers={}, retry=True):
         """Execute an HTTP request and return a dict containing the response
@@ -123,56 +136,41 @@ class IronClient:
                         v.encode('ascii') if isinstance(v, unicode) else v)
                         for k, v in headers.items())
 
-        if self.protocol == "http":
-            conn = httplib.HTTPConnection(self.host, self.port)
-        elif self.protocol == "https":
-            conn = httplib.HTTPSConnection(self.host, self.port)
-        else:
-            raise ValueError("Invalid protocol.")
-
         url = self.base_url + url
         if isinstance(url, unicode):
             url = url.encode('ascii')
 
-        conn.request(method, url, body, headers)
-        resp = conn.getresponse()
-        result = {}
-        body = resp.read()
-        result["body"] = body
-        result["status"] = resp.status
-        result["resp"] = resp
-        result["content-type"] = resp.getheader("Content-Type")
-        conn.close()
+        r = self._doRequest(url, method, body, headers)
 
-        if resp.status is httplib.SERVICE_UNAVAILABLE and retry:
+        if r.status_code == requests.codes['service_unavailable'] and retry:
             tries = 5
             delay = .5
             backoff = 2
-            while resp.status is httplib.SERVICE_UNAVAILABLE and tries > 0:
+            while r.status_code == requests.codes['service_unavailable'] and tries > 0:
                 tries -= 1
                 time.sleep(delay)
                 delay *= backoff
-                conn.request(method, url, body, headers)
-                resp = conn.getresponse()
-                result = {}
-                result["body"] = resp.read()
-                result["status"] = resp.status
-                result["content-type"] = resp.getheader("Content-Type")
-                conn.close()
+                r = self._doRequest(url, method, body, headers)
 
-        if result["content-type"] == "application/json":
+        if r.status_code >= 400:
+            r.raise_for_status()
+
+        result = {}
+        contentType = r.headers["Content-Type"]
+        if contentType is None:
+            contentType = "text/plain"
+        else:
+            contentType = contentType.split(";")[0]
+        if contentType.lower() == "application/json":
             try:
-                result["body"] = json.loads(result["body"])
+                result["body"] = r.json()
             except:
-                pass
-
-        if resp.status >= 400:
-            message = resp.reason
-            if result["content-type"] == "application/json":
-                message = result["body"]["msg"]
-            raise httplib.HTTPException("%s: %s (%s)" %
-                    (resp.status, message, url))
-
+                result["body"] = r.text
+        else:
+            result["body"] = r.text
+        result["status"] = r.status_code
+        result["resp"] = r
+        result["content-type"] = contentType
         return result
 
     def get(self, url, headers={}, retry=True):
