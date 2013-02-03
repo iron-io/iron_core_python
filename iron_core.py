@@ -85,6 +85,7 @@ class IronClient:
         self.protocol = config["protocol"]
         self.port = config["port"]
         self.api_version = config["api_version"]
+        self.conn = requests.Session()
         self.headers = {
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
@@ -101,13 +102,13 @@ class IronClient:
 
     def _doRequest(self, url, method, body="", headers={}):
         if method == "GET":
-            r = requests.get(url, headers=headers)
+            r = self.conn.get(url, headers=headers)
         elif method == "POST":
-            r = requests.post(url, data=body, headers=headers)
+            r = self.conn.post(url, data=body, headers=headers)
         elif method == "PUT":
-            r = requests.put(url, data=body, headers=headers)
+            r = self.conn.put(url, data=body, headers=headers)
         elif method == "DELETE":
-            r = requests.delete(url, headers=headers)
+            r = self.conn.delete(url, headers=headers)
         else:
             raise ValueError("Invalid HTTP method")
         return r
