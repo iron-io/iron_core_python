@@ -10,6 +10,8 @@ except:
 
 
 class IronClient:
+    __version__ = "1.0.1"
+
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
             config_file=None):
