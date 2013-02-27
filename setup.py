@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
         name = "iron-core",
         py_modules = ["iron_core"],
-        install_requires=["iso8601", "requests >= 1.1.0"],
+        install_requires=["iso8601", "requests >= 1.1.0", "six"],
         version = "1.0.1",
         description = "Universal classes and methods for Iron.io API wrappers to build on.",
         author = "Iron.io",
