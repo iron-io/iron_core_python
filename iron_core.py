@@ -269,7 +269,7 @@ def configFromFile(config, path, product=None):
         return config
     try:
         file = open(path, "r")
-    except IOError, e:
+    except IOError as e:
         return config
     raw = json.loads(file.read())
     for k in raw.keys():
