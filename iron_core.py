@@ -1,3 +1,4 @@
+import six
 import time
 from datetime import datetime
 import os
@@ -135,13 +136,14 @@ class IronClient:
         else:
             headers = self.headers
 
-        headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
-                        v.encode('ascii') if isinstance(v, unicode) else v)
+        headers = dict((k.encode('ascii') if isinstance(k, six.text_type) else k,
+                        v.encode('ascii') if isinstance(v, six.text_type) else v)
                         for k, v in headers.items())
 
         url = self.base_url + url
-        if isinstance(url, unicode):
-            url = url.encode('ascii')
+        if not six.PY3:
+            if isinstance(url, unicode):
+                url = url.encode('ascii')
 
         r = self._doRequest(url, method, body, headers)
 
