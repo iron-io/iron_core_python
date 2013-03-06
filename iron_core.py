@@ -110,7 +110,7 @@ class IronClient:
         elif method == "PUT":
             r = self.conn.put(url, data=body, headers=headers)
         elif method == "DELETE":
-            r = self.conn.delete(url, headers=headers)
+            r = self.conn.delete(url, data=body, headers=headers)
         else:
             raise ValueError("Invalid HTTP method")
         return r
@@ -209,7 +209,7 @@ class IronClient:
         return self.request(url=url, method="POST", body=body, headers=headers,
                 retry=retry)
 
-    def delete(self, url, headers={}, retry=True):
+    def delete(self, url, headers={}, retry=True, body=""):
         """Execute an HTTP DELETE request and return a dict containing the
         response and the response status code.
 
@@ -220,9 +220,11 @@ class IronClient:
                    defaults. Defaults to an empty dict.
         retry -- Whether exponential backoff should be employed. Defaults
                  to True.
+        body -- A string or file object to send as the body of the request.
+                Defaults to an empty string.
         """
         return self.request(url=url, method="DELETE", headers=headers,
-                retry=retry)
+                retry=retry, body=body)
 
     def put(self, url, body="", headers={}, retry=True):
         """Execute an HTTP PUT request and return a dict containing the
