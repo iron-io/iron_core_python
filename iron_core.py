@@ -93,7 +93,7 @@ class IronClient:
         self.port = config["port"]
         self.api_version = config["api_version"]
         
-        pool_connections = config.get('pool_connections', requets.adapters.DEFAULT_POOLSIZE)
+        pool_connections = config.get('pool_connections', requests.adapters.DEFAULT_POOLSIZE)
         pool_maxsize = config.get('pool_maxsize', requests.adapters.DEFAULT_POOLSIZE)
         adapter = requests.adapters.HTTPAdapter(pool_connections=pool_connections, pool_maxsize=pool_maxsize)
         self.conn = requests.Session()
