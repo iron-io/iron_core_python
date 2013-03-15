@@ -14,7 +14,7 @@ class IronClient:
 
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
-            config_file=None):
+            config_file=None, pool_connections=None, pool_maxsize=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -34,6 +34,10 @@ class IronClient:
                        requests. Defaults to None.
         config_file -- The config file to load configuration from. Defaults to
                        None.
+        pool_connections -- The initial size of the HTTP connection pool. Defaults to
+                            the `requests` library default.
+        pool_maxsize -- The max. size of the HTTP connection pool. Defaults to the 
+                        `requests` library default.
         """
         config = {
                 "host": None,
@@ -69,7 +73,8 @@ class IronClient:
         config = configFromFile(config, config_file, product)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
-                api_version=api_version)
+                api_version=api_version,
+                pool_connections=pool_connections, pool_maxsize=pool_maxsize,)
 
         required_fields = ["project_id", "token"]
 
@@ -87,7 +92,14 @@ class IronClient:
         self.protocol = config["protocol"]
         self.port = config["port"]
         self.api_version = config["api_version"]
+        
+        pool_connections = config.get('pool_connections', requets.adapters.DEFAULT_POOLSIZE)
+        pool_maxsize = config.get('pool_maxsize', requests.adapters.DEFAULT_POOLSIZE)
+        adapter = requests.adapters.HTTPAdapter(pool_connections=pool_connections, pool_maxsize=pool_maxsize)
         self.conn = requests.Session()
+        self.conn.mount("http://", adapter)
+        self.conn.mount("https://", adapter)
+        
         self.headers = {
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
