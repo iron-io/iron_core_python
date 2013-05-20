@@ -1,4 +1,5 @@
 from setuptools import setup
+import sys
 
 python3_setup = {}
 if sys.version_info >= (3,):
