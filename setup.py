@@ -23,6 +23,7 @@ setup(
                 "Topic :: Software Development :: Libraries :: Python Modules",
 
         ],
+        use_2to3 = True,
         long_description = """\
 Iron.io common library
 ----------------------
