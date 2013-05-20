@@ -94,7 +94,10 @@ class IronClient:
         }
         if self.token:
             self.headers["Authorization"] = "OAuth %s" % self.token
-        self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
+        if self.protocol =="https" and self.port == 443:
+            self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
+        else:
+            self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
                 self.port, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
@@ -135,13 +138,7 @@ class IronClient:
         else:
             headers = self.headers
 
-        headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
-                        v.encode('ascii') if isinstance(v, unicode) else v)
-                        for k, v in headers.items())
-
         url = self.base_url + url
-        if isinstance(url, unicode):
-            url = url.encode('ascii')
 
         r = self._doRequest(url, method, body, headers)
 
