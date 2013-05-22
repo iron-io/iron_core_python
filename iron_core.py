@@ -1,7 +1,8 @@
 import time
 from datetime import datetime
 import os
-import iso8601
+import sys
+import dateutil.parser
 import requests
 try:
     import json
@@ -94,8 +95,11 @@ class IronClient:
         }
         if self.token:
             self.headers["Authorization"] = "OAuth %s" % self.token
-        self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
-                self.port, self.api_version)
+        if self.protocol =="https" and self.port == 443:
+            self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
+        else:
+            self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
+                                                self.port, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
         if self.protocol == "https" and self.port != 443:
@@ -135,13 +139,15 @@ class IronClient:
         else:
             headers = self.headers
 
-        headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
-                        v.encode('ascii') if isinstance(v, unicode) else v)
-                        for k, v in headers.items())
+        if not sys.version_info >= (3,) and headers:
+            headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
+                            v.encode('ascii') if isinstance(v, unicode) else v)
+                           for k, v in headers.items())
 
         url = self.base_url + url
-        if isinstance(url, unicode):
-            url = url.encode('ascii')
+        if not sys.version_info >= (3,):
+            if isinstance(url, unicode):
+                url = url.encode('ascii')
 
         r = self._doRequest(url, method, body, headers)
 
@@ -249,7 +255,7 @@ class IronClient:
         if timestamp is None:
             timestamp = datetime.now()
             return timestamp
-        return iso8601.parse_date(timestamp)
+        return dateutil.parser.parse(timestamp)
 
     @staticmethod
     def toRfc3339(timestamp=None):
@@ -271,9 +277,12 @@ def configFromFile(config, path, product=None):
         return config
     try:
         file = open(path, "r")
-    except IOError, e:
+    except IOError:
         return config
+
     raw = json.loads(file.read())
+    file.close()
+
     for k in raw.keys():
         if k in config:
             config[k] = raw[k]

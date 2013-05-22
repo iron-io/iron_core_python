@@ -1,10 +1,15 @@
 from setuptools import setup
+import sys
+
+python3_setup = {}
+if sys.version_info >= (3,):
+        python3_setup['use_2to3'] = True
 
 setup(
         name = "iron-core",
         py_modules = ["iron_core"],
-        install_requires=["iso8601", "requests >= 1.1.0"],
-        version = "1.0.2",
+        install_requires=["requests >= 1.1.0", "python-dateutil"],
+        version = "1.1.0",
         description = "Universal classes and methods for Iron.io API wrappers to build on.",
         author = "Iron.io",
         author_email = "thirdparty@iron.io",
@@ -30,5 +35,6 @@ Iron.io common library
 This package offers common functions for Iron.io APIs and services. It does not wrap 
 any APIs or contain API-specific features, but serves as a common base that wrappers
 may be built on. Users looking for API wrappers should instead look at 
-iron_worker_python and iron_worker_mq."""
+iron_worker_python and iron_worker_mq.""",
+        **python3_setup
 )
