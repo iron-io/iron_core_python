@@ -59,7 +59,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(client.headers["User-Agent"], "Test (version: 0.1.0)")
         self.assertEqual(client.headers["Authorization"], "OAuth TEST")
         self.assertEqual(client.base_url,
-                "https://worker-aws-us-east-1.iron.io:443/2/projects/TEST2/")
+                "https://worker-aws-us-east-1.iron.io/2/projects/TEST2/")
 
     def test_fromArgsUseHTTP(self):
         client = iron_core.IronClient(name="Test", version="0.1.0",
