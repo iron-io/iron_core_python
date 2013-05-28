@@ -9,7 +9,7 @@ setup(
         name = "iron-core",
         py_modules = ["iron_core"],
         install_requires=["requests >= 1.1.0", "python-dateutil"],
-        version = "1.1.0",
+        version = "1.1.1",
         description = "Universal classes and methods for Iron.io API wrappers to build on.",
         author = "Iron.io",
         author_email = "thirdparty@iron.io",
