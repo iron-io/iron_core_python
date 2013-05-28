@@ -11,7 +11,7 @@ except:
 
 
 class IronClient:
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def __init__(self, name, version, product, host=None, project_id=None,
             token=None, protocol=None, port=None, api_version=None,
@@ -172,7 +172,7 @@ class IronClient:
             contentType = contentType.split(";")[0]
         if contentType.lower() == "application/json":
             try:
-                result["body"] = r.json()
+                result["body"] = json.loads(r.text)
             except:
                 result["body"] = r.text
         else:
