@@ -115,6 +115,8 @@ class IronClient:
             r = self.conn.put(url, data=body, headers=headers)
         elif method == "DELETE":
             r = self.conn.delete(url, data=body, headers=headers)
+        elif method == "PATCH":
+            r = self.conn.patch(url, data=body, headers=headers)
         else:
             raise ValueError("Invalid HTTP method")
         return r
@@ -249,6 +251,22 @@ class IronClient:
         return self.request(url=url, method="PUT", body=body, headers=headers,
                 retry=retry)
 
+    def patch(self, url, body="", headers={}, retry=True):
+        """Execute an HTTP PATCH request and return a dict containing the
+        response and the response status code.
+
+        Keyword arguments:
+        url -- The path to execute the result against, not including the API
+               version or project ID, with no leading /. Required.
+        body -- A string or file object to send as the body of the request.
+                Defaults to an empty string.
+        headers -- HTTP Headers to send with the request. Can overwrite the
+                defaults. Defaults to {}.
+        retry -- Whether exponential backoff should be employed. Defaults
+                 to True.
+        """
+        return self.request(url=url, method="PATCH", body=body, headers=headers,
+                retry=retry)
 
     @staticmethod
     def fromRfc3339(timestamp=None):
