@@ -43,6 +43,7 @@ class IronClient:
                 "api_version": None,
                 "project_id": None,
                 "token": None,
+                "keystone": None,
         }
         products = {
                 "iron_worker": {
@@ -72,12 +73,30 @@ class IronClient:
                 token=token, protocol=protocol, port=port,
                 api_version=api_version)
 
-        required_fields = ["project_id", "token"]
+        required_fields = ["project_id"]
 
         for field in required_fields:
             if config[field] is None:
                 raise ValueError("No %s set. %s is a required field." % (field,
                     field))
+
+        keystone_configured = False
+        if config["keystone"] is not None:
+            keystone_required_keys = ["server", "tenant", "username", "password"]
+            if len(intersect(keystone_required_keys, config["keystone"].keys())) == len(keystone_required_keys):
+                self.token_provider = 1 # KeystoneTokenProvider
+                keystone_configured = True
+            else:
+                raise ValueError("Missing keystone keys.")
+
+        if config["token"] is None and not keystone_configured:
+            print(config["token"])
+            print(keystone_configured)
+            raise ValueError("At least one of token or keystone should be specified.")
+        elif config["token"] is not None:
+            self.token_provider = 1 # IronTokenProvider(config["token"])
+
+
 
         self.name = name
         self.version = version
@@ -85,6 +104,7 @@ class IronClient:
         self.host = config["host"]
         self.project_id = config["project_id"]
         self.token = config["token"]
+        self.keystone = config["keystone"]
         self.protocol = config["protocol"]
         self.port = config["port"]
         self.api_version = config["api_version"]
@@ -326,3 +346,6 @@ def configFromArgs(config, **kwargs):
         if kwargs[k] is not None:
             config[k] = kwargs[k]
     return config
+
+def intersect(a, b):
+     return list(set(a) & set(b))
