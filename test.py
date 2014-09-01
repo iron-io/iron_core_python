@@ -1,6 +1,8 @@
 import iron_core
 import unittest
 import os
+from iron_core import KeystoneTokenProvider
+
 try:
     import json
 except:
@@ -57,7 +59,6 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(client.port, 443)
         self.assertEqual(client.api_version, 2)
         self.assertEqual(client.headers["User-Agent"], "Test (version: 0.1.0)")
-        self.assertEqual(client.headers["Authorization"], "OAuth TEST")
         self.assertEqual(client.base_url,
                 "https://worker-aws-us-east-1.iron.io/2/projects/TEST2/")
 
@@ -185,6 +186,85 @@ class TestConfig(unittest.TestCase):
 
         os.remove("test_config.json")
 
+    def test_requireKeystone(self):
+        test_keystone_config = {
+            "project_id": "test-keystone-config-project-id",
+            "keystone": {
+                "server": "http://localhost/",
+                "tenant": "keystone-tenant",
+                "username": "keystone-username",
+                "password": "keystone-password"
+            }
+        }
+        create_test_config("test_keystone_config.json", test_keystone_config)
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                                      product="iron_worker", config_file="test_keystone_config.json")
+
+        self.assertTrue(client.keystone is not None)
+
+        os.remove("test_keystone_config.json")
+
+    def test_initKeystoneFromJson(self):
+        test_keystone_config = {
+            "project_id": "test-keystone-config-project-id",
+            "keystone": {
+                "server": "http://localhost",
+                "tenant": "keystone-tenant",
+                "username": "keystone-username",
+                "password": "keystone-password"
+            }
+        }
+        create_test_config("test_keystone_config.json", test_keystone_config)
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                                      product="iron_worker", config_file="test_keystone_config.json")
+
+        keystone_required_keys = ["server", "tenant", "username", "password"]
+        config_keystone_keys = client.keystone.keys()
+
+        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+        self.assertEqual(client.project_id, test_keystone_config["project_id"])
+
+        remove_test_config("test_keystone_config.json")
+
+    def test_initKeystoneFromConstructor(self):
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                                      product="iron_worker",
+                                      project_id="test-keystone-config-project-id",
+                                      keystone={
+                                          "server": "http://localhost",
+                                          "tenant": "keystone-tenant",
+                                          "username": "keystone-username",
+                                          "password": "keystone-password"
+                                      })
+
+        keystone_required_keys = ["server", "tenant", "username", "password"]
+        config_keystone_keys = client.keystone.keys()
+
+        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+
+    def test_ironTokenProvider(self):
+        client = iron_core.IronTokenProvider("iron-token")
+        self.assertEqual(client.getToken(), "iron-token")
+
+    def test_checkTrailingSlash(self):
+        keystone_data = {
+            "server": "http://localhost",
+            "tenant": "keystone-tenant",
+            "username": "keystone-username",
+            "password": "keystone-password"
+        }
+        keystone = KeystoneTokenProvider(keystone_data)
+        self.assertEqual("http://localhost/", keystone.server)
+
+def create_test_config(filename, content):
+    file = open(filename, "w")
+    file.write(json.dumps(content))
+    file.close()
+
+def remove_test_config(filename):
+    os.remove(filename)
 
 if __name__ == "__main__":
     unittest.main()
