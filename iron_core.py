@@ -55,7 +55,7 @@ class KeystoneTokenProvider:
             self.local_expires_at = datetime.now() + duration
             self.token = token_data['id']
 
-        return "qJHt1luf9D5RA0_6rm28whSelX8" ##self.token
+        return self.token
 
 
 class IronClient:
@@ -158,8 +158,6 @@ class IronClient:
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
         }
-        if self.token or self.keystone:
-            self.headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
         if self.protocol == "https" and self.port == 443:
             self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
         else:
@@ -172,6 +170,8 @@ class IronClient:
                     % (self.port, 443))
 
     def _doRequest(self, url, method, body="", headers={}):
+        if self.token or self.keystone:
+            self.headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
         if method == "GET":
             r = self.conn.get(url, headers=headers)
         elif method == "POST":
