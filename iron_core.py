@@ -21,7 +21,7 @@ class IronTokenProvider:
 
 class KeystoneTokenProvider:
     def __init__(self, keystone):
-        self.server = keystone["server"]
+        self.server = keystone["server"] + ("" if keystone["server"].endswith("/") else "/")
         self.tenant = keystone["tenant"]
         self.username = keystone["username"]
         self.password = keystone["password"]
@@ -43,7 +43,6 @@ class KeystoneTokenProvider:
 
             headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
-            p = json.dumps(payload)
             response = requests.post(self.server + 'tokens', data=json.dumps(payload), headers=headers)
             result = response.json()
             token_data = result['access']['token']

@@ -1,6 +1,8 @@
 import iron_core
 import unittest
 import os
+from iron_core import KeystoneTokenProvider
+
 try:
     import json
 except:
@@ -245,6 +247,16 @@ class TestConfig(unittest.TestCase):
     def test_ironTokenProvider(self):
         client = iron_core.IronTokenProvider("iron-token")
         self.assertEqual(client.getToken(), "iron-token")
+
+    def test_checkTrailingSlash(self):
+        keystone_data = {
+            "server": "http://localhost",
+            "tenant": "keystone-tenant",
+            "username": "keystone-username",
+            "password": "keystone-password"
+        }
+        keystone = KeystoneTokenProvider(keystone_data)
+        self.assertEqual("http://localhost/", keystone.server)
 
 def create_test_config(filename, content):
     file = open(filename, "w")
