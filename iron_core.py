@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+import datetime as datetime_mod
 import os
 import sys
 import dateutil.parser
@@ -10,12 +11,59 @@ except:
     import simplejson as json
 
 
+class IronTokenProvider:
+    def __init__(self, token):
+        self.token = token
+
+    def getToken(self):
+        return self.token
+
+
+class KeystoneTokenProvider:
+    def __init__(self, keystone):
+        self.server = keystone["server"]
+        self.tenant = keystone["tenant"]
+        self.username = keystone["username"]
+        self.password = keystone["password"]
+        self.token = None
+        self.local_expires_at = datetime_mod.timedelta(seconds=0)
+
+
+    def getToken(self):
+        if self.token is None or (datetime.now() - self.local_expires_at) > -10:
+            payload = {
+                'auth': {
+                    'tenantName': self.tenant,
+                    'passwordCredentials': {
+                        'username': self.username,
+                        'password': self.password
+                    }
+                }
+            }
+
+            headers = {'content-type': 'application/json', 'Accept': 'application/json'}
+
+            p = json.dumps(payload)
+            response = requests.post(self.server + 'tokens', data=json.dumps(payload), headers=headers)
+            result = response.json()
+            token_data = result['access']['token']
+
+            issued_at = dateutil.parser.parse(token_data['issued_at']).replace(tzinfo=None)
+            expires = dateutil.parser.parse(token_data['expires']).replace(tzinfo=None)
+            duration = expires - issued_at
+
+            self.local_expires_at = datetime.now() + duration
+            self.token = token_data['id']
+
+        return "qJHt1luf9D5RA0_6rm28whSelX8" ##self.token
+
+
 class IronClient:
     __version__ = "1.1.1"
 
     def __init__(self, name, version, product, host=None, project_id=None,
-            token=None, protocol=None, port=None, api_version=None,
-            config_file=None):
+                 token=None, protocol=None, port=None, api_version=None,
+                 config_file=None, keystone=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -71,30 +119,27 @@ class IronClient:
         config = configFromFile(config, config_file, product)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
-                api_version=api_version)
+                api_version=api_version, keystone=keystone)
 
         required_fields = ["project_id"]
 
         for field in required_fields:
             if config[field] is None:
-                raise ValueError("No %s set. %s is a required field." % (field,
-                    field))
+                raise ValueError("No %s set. %s is a required field." % (field, field))
 
         keystone_configured = False
         if config["keystone"] is not None:
             keystone_required_keys = ["server", "tenant", "username", "password"]
             if len(intersect(keystone_required_keys, config["keystone"].keys())) == len(keystone_required_keys):
-                self.token_provider = 1 # KeystoneTokenProvider
+                self.token_provider = KeystoneTokenProvider(config["keystone"])
                 keystone_configured = True
             else:
                 raise ValueError("Missing keystone keys.")
+        elif config["token"] is not None:
+            self.token_provider = IronTokenProvider(config["token"])
 
         if config["token"] is None and not keystone_configured:
-            print(config["token"])
-            print(keystone_configured)
             raise ValueError("At least one of token or keystone should be specified.")
-        elif config["token"] is not None:
-            self.token_provider = 1 # IronTokenProvider(config["token"])
 
 
 
@@ -113,9 +158,9 @@ class IronClient:
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
         }
-        if self.token:
-            self.headers["Authorization"] = "OAuth %s" % self.token
-        if self.protocol =="https" and self.port == 443:
+        if self.token or self.keystone:
+            self.headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+        if self.protocol == "https" and self.port == 443:
             self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
         else:
             self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
@@ -348,4 +393,4 @@ def configFromArgs(config, **kwargs):
     return config
 
 def intersect(a, b):
-     return list(set(a) & set(b))
+    return list(set(a) & set(b))
