@@ -26,15 +26,11 @@ class KeystoneTokenProvider:
         self.username = keystone["username"]
         self.password = keystone["password"]
         self.token = None
-        self.local_expires_at = None
+        self.local_expires_at_timestamp = 0
 
 
     def getToken(self):
-        if self.local_expires_at:
-            date_diff = time.mktime(datetime.now().timetuple()) - time.mktime(self.local_expires_at.timetuple())
-        else:
-            date_diff = time.mktime(datetime.now().timetuple())
-
+        date_diff = time.mktime(datetime.now().timetuple()) - self.local_expires_at_timestamp
         if self.token is None or date_diff > -10:
             payload = {
                 'auth': {
@@ -56,7 +52,7 @@ class KeystoneTokenProvider:
             expires = dateutil.parser.parse(token_data['expires']).replace(tzinfo=None)
             duration = expires - issued_at
 
-            self.local_expires_at = datetime.now() + duration
+            self.local_expires_at_timestamp = time.mktime((datetime.now() + duration).timetuple())
             self.token = token_data['id']
 
         return self.token
