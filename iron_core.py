@@ -26,11 +26,12 @@ class KeystoneTokenProvider:
         self.username = keystone["username"]
         self.password = keystone["password"]
         self.token = None
-        self.local_expires_at = datetime_mod.timedelta(seconds=0)
+        self.local_expires_at_timestamp = 0
 
 
     def getToken(self):
-        if self.token is None or (datetime.now() - self.local_expires_at) > -10:
+        date_diff = time.mktime(datetime.now().timetuple()) - self.local_expires_at_timestamp
+        if self.token is None or date_diff > -10:
             payload = {
                 'auth': {
                     'tenantName': self.tenant,
@@ -51,14 +52,14 @@ class KeystoneTokenProvider:
             expires = dateutil.parser.parse(token_data['expires']).replace(tzinfo=None)
             duration = expires - issued_at
 
-            self.local_expires_at = datetime.now() + duration
+            self.local_expires_at_timestamp = time.mktime((datetime.now() + duration).timetuple())
             self.token = token_data['id']
 
         return self.token
 
 
 class IronClient:
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
@@ -170,7 +171,7 @@ class IronClient:
 
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
-            self.headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+            headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
         if method == "GET":
             r = self.conn.get(url, headers=headers)
         elif method == "POST":
