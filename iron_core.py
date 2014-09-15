@@ -11,7 +11,7 @@ except:
     import simplejson as json
 
 
-class IronTokenProvider:
+class IronTokenProvider(object):
     def __init__(self, token):
         self.token = token
 
@@ -19,7 +19,7 @@ class IronTokenProvider:
         return self.token
 
 
-class KeystoneTokenProvider:
+class KeystoneTokenProvider(object):
     def __init__(self, keystone):
         self.server = keystone["server"] + ("" if keystone["server"].endswith("/") else "/")
         self.tenant = keystone["tenant"]
@@ -58,7 +58,7 @@ class KeystoneTokenProvider:
         return self.token
 
 
-class IronClient:
+class IronClient(object):
     __version__ = "1.1.2"
 
     def __init__(self, name, version, product, host=None, project_id=None,
