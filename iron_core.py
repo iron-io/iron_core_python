@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+from urlparse import urlparse
 import datetime as datetime_mod
 import os
 import sys
@@ -63,7 +64,7 @@ class IronClient(object):
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
-                 config_file=None, keystone=None):
+                 config_file=None, keystone=None, cloud=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -84,6 +85,7 @@ class IronClient(object):
         config_file -- The config file to load configuration from. Defaults to
                        None.
         """
+
         config = {
                 "host": None,
                 "protocol": "https",
@@ -146,6 +148,7 @@ class IronClient(object):
         self.name = name
         self.version = version
         self.product = product
+
         self.host = config["host"]
         self.project_id = config["project_id"]
         self.token = config["token"]
@@ -158,6 +161,14 @@ class IronClient(object):
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
         }
+
+        if cloud is not None:
+            url = urlparse(cloud)
+            self.protocol = url.scheme
+            self.host = url.netloc.split(":")[0]
+            if url.port:
+                self.port = url.port
+
         if self.protocol == "https" and self.port == 443:
             self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
         else:
@@ -172,6 +183,7 @@ class IronClient(object):
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
             headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+
         if method == "GET":
             r = self.conn.get(url, headers=headers)
         elif method == "POST":
