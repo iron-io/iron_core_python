@@ -85,7 +85,6 @@ class IronClient(object):
         config_file -- The config file to load configuration from. Defaults to
                        None.
         """
-
         config = {
                 "host": None,
                 "protocol": "https",
@@ -148,7 +147,6 @@ class IronClient(object):
         self.name = name
         self.version = version
         self.product = product
-
         self.host = config["host"]
         self.project_id = config["project_id"]
         self.token = config["token"]
