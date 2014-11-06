@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+from urlparse import urlparse
 import datetime as datetime_mod
 import os
 import sys
@@ -63,7 +64,7 @@ class IronClient(object):
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
-                 config_file=None, keystone=None):
+                 config_file=None, keystone=None, cloud=None, path_prefix=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
@@ -92,6 +93,8 @@ class IronClient(object):
                 "project_id": None,
                 "token": None,
                 "keystone": None,
+                "path_prefix": None,
+                "cloud": None,
         }
         products = {
                 "iron_worker": {
@@ -119,7 +122,7 @@ class IronClient(object):
         config = configFromFile(config, config_file, product)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
-                api_version=api_version, keystone=keystone)
+                api_version=api_version, keystone=keystone, cloud=cloud)
 
         required_fields = ["project_id"]
 
@@ -153,16 +156,26 @@ class IronClient(object):
         self.protocol = config["protocol"]
         self.port = config["port"]
         self.api_version = config["api_version"]
+        self.cloud = config["cloud"]
         self.conn = requests.Session()
         self.headers = {
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
         }
+
+        if self.cloud is not None:
+            url = urlparse(self.cloud)
+            self.protocol = url.scheme
+            self.host = url.netloc.split(":")[0]
+            if url.port:
+                self.port = url.port
+            self.path_prefix = url.path.rstrip("/")
+
         if self.protocol == "https" and self.port == 443:
-            self.base_url = "%s://%s/%s/" % (self.protocol, self.host, self.api_version)
+            self.base_url = "%s://%s%s/%s/" % (self.protocol, self.host, self.path_prefix, self.api_version)
         else:
-            self.base_url = "%s://%s:%s/%s/" % (self.protocol, self.host,
-                                                self.port, self.api_version)
+            self.base_url = "%s://%s:%s%s/%s/" % (self.protocol, self.host,
+                                                self.port, self.path_prefix, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
         if self.protocol == "https" and self.port != 443:
@@ -172,6 +185,7 @@ class IronClient(object):
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
             headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+
         if method == "GET":
             r = self.conn.get(url, headers=headers)
         elif method == "POST":
