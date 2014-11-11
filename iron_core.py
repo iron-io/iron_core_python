@@ -64,7 +64,7 @@ class IronClient(object):
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
-                 config_file=None, keystone=None, cloud=None, path_prefix=None):
+                 config_file=None, keystone=None, cloud=None, path_prefix=''):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
