@@ -122,7 +122,7 @@ class IronClient(object):
         config = configFromFile(config, config_file, product)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
-                api_version=api_version, keystone=keystone, cloud=cloud)
+                api_version=api_version, keystone=keystone, cloud=cloud, path_prefix=path_prefix)
 
         required_fields = ["project_id"]
 
@@ -162,6 +162,7 @@ class IronClient(object):
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
         }
+        self.path_prefix = config["path_prefix"]
 
         if self.cloud is not None:
             url = urlparse(self.cloud)
@@ -178,9 +179,6 @@ class IronClient(object):
                                                 self.port, self.path_prefix, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
-        if self.protocol == "https" and self.port != 443:
-            raise ValueError("Invalid port (%s) for an HTTPS request. Want %s."
-                    % (self.port, 443))
 
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
