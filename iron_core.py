@@ -46,6 +46,8 @@ class KeystoneTokenProvider(object):
             headers = {'content-type': 'application/json', 'Accept': 'application/json'}
 
             response = requests.post(self.server + 'tokens', data=json.dumps(payload), headers=headers)
+            response.raise_for_status()
+
             result = response.json()
             token_data = result['access']['token']
 
@@ -240,8 +242,7 @@ class IronClient(object):
                 delay *= backoff
                 r = self._doRequest(url, method, body, headers)
 
-        if r.status_code >= 400:
-            r.raise_for_status()
+        r.raise_for_status()
 
         result = {}
         contentType = r.headers["Content-Type"]
