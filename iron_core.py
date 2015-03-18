@@ -1,7 +1,6 @@
 import time
 from datetime import datetime
 from urlparse import urlparse
-import datetime as datetime_mod
 import os
 import sys
 import dateutil.parser
