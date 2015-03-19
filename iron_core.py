@@ -62,7 +62,7 @@ class KeystoneTokenProvider(object):
 
 
 class IronClient(object):
-    __version__ = "1.1.2"
+    __version__ = "1.1.8"
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
