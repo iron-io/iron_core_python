@@ -61,7 +61,7 @@ class KeystoneTokenProvider(object):
 
 
 class IronClient(object):
-    __version__ = "1.1.2"
+    __version__ = "1.1.8"
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
@@ -158,7 +158,7 @@ class IronClient(object):
         self.port = config["port"]
         self.api_version = config["api_version"]
         self.cloud = config["cloud"]
-        self.conn = requests.Session()
+
         self.headers = {
                 "Accept": "application/json",
                 "User-Agent": "%s (version: %s)" % (self.name, self.version)
@@ -186,15 +186,15 @@ class IronClient(object):
             headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
 
         if method == "GET":
-            r = self.conn.get(url, headers=headers)
+            r = requests.get(url, headers=headers)
         elif method == "POST":
-            r = self.conn.post(url, data=body, headers=headers)
+            r = requests.post(url, data=body, headers=headers)
         elif method == "PUT":
-            r = self.conn.put(url, data=body, headers=headers)
+            r = requests.put(url, data=body, headers=headers)
         elif method == "DELETE":
-            r = self.conn.delete(url, data=body, headers=headers)
+            r = requests.delete(url, data=body, headers=headers)
         elif method == "PATCH":
-            r = self.conn.patch(url, data=body, headers=headers)
+            r = requests.patch(url, data=body, headers=headers)
         else:
             raise ValueError("Invalid HTTP method")
         return r
