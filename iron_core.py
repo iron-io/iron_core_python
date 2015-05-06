@@ -231,11 +231,12 @@ class IronClient(object):
 
         r = self._doRequest(url, method, body, headers)
 
-        if r.status_code == requests.codes['service_unavailable'] and retry:
+        retry_http_codes = [503, 504]
+        if r.status_code in retry_http_codes and retry:
             tries = 5
             delay = .5
             backoff = 2
-            while r.status_code == requests.codes['service_unavailable'] and tries > 0:
+            while r.status_code in retry_http_codes and tries > 0:
                 tries -= 1
                 time.sleep(delay)
                 delay *= backoff
