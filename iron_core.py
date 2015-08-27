@@ -1,10 +1,14 @@
 import time
 from datetime import datetime
-from urlparse import urlparse
 import os
 import sys
 import dateutil.parser
 import requests
+try:
+    from urlparse import urlparse
+except:
+    from urllib.parse import urlparse
+
 try:
     import json
 except:
@@ -61,7 +65,7 @@ class KeystoneTokenProvider(object):
 
 
 class IronClient(object):
-    __version__ = "1.1.8"
+    __version__ = "1.1.9"
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
