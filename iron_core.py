@@ -65,7 +65,7 @@ class KeystoneTokenProvider(object):
 
 
 class IronClient(object):
-    __version__ = "1.1.9"
+    __version__ = "1.2.0"
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
@@ -107,8 +107,8 @@ class IronClient(object):
                     "version": 2
                 },
                 "iron_mq": {
-                    "host": "mq-aws-us-east-1.iron.io",
-                    "version": 1
+                    "host": "mq-aws-us-east-1-1.iron.io",
+                    "version": 3
                 },
                 "iron_cache": {
                     "host": "cache-aws-us-east-1.iron.io",
