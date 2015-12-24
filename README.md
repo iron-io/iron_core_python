@@ -8,6 +8,7 @@ that we build at [Iron.io](http://www.iron.io) from Python.
 * Service-agnostic
 * Pip- and easy_install-installable
 * Well documented
+* google app engine compatible
 
 ## It Is Not
 
