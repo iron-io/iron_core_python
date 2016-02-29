@@ -118,9 +118,12 @@ class IronClient(object):
         if product in products:
             config["host"] = products[product]["host"]
             config["api_version"] = products[product]["version"]
-
-        config = configFromFile(config,
-                os.path.expanduser("~/.iron.json"), product)
+        
+        try:
+            config = configFromFile(config,
+                    os.path.expanduser("~/.iron.json"), product)
+        except:
+            pass
         config = configFromEnv(config)
         config = configFromEnv(config, product)
         config = configFromFile(config, "iron.json", product)
