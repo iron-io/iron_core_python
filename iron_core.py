@@ -69,13 +69,26 @@ class IronClient(object):
 
     def __init__(self, name, version, product, host=None, project_id=None,
                  token=None, protocol=None, port=None, api_version=None,
-                 config_file=None, keystone=None, cloud=None, path_prefix=''):
+                 config_file=None, keystone=None, cloud=None, path_prefix='',
+                 env=None):
         """Prepare a Client that can make HTTP calls and return it.
 
         Keyword arguments:
         name -- the name of the client. Required.
         version -- the version of the client. Required.
         product -- the name of the product the client will access. Required.
+        env -- the env is useful for keeping multiple environment information
+               in one iron.json file. it only works when you pass env variable
+               e.g.
+               {
+                  "production": {
+                      "token": ...,
+                      "project_id": ...
+                  },
+                  "test": {
+                      ...
+                  }
+               }
         host -- the default domain the client will be requesting. Defaults
                 to None.
         project_id -- the project ID the client will be requesting. Can be
@@ -118,16 +131,16 @@ class IronClient(object):
         if product in products:
             config["host"] = products[product]["host"]
             config["api_version"] = products[product]["version"]
-        
+
         try:
             config = configFromFile(config,
-                    os.path.expanduser("~/.iron.json"), product)
+                    os.path.expanduser("~/.iron.json"), product, env)
         except:
             pass
         config = configFromEnv(config)
         config = configFromEnv(config, product)
-        config = configFromFile(config, "iron.json", product)
-        config = configFromFile(config, config_file, product)
+        config = configFromFile(config, "iron.json", product, env)
+        config = configFromFile(config, config_file, product, env)
         config = configFromArgs(config, host=host, project_id=project_id,
                 token=token, protocol=protocol, port=port,
                 api_version=api_version, keystone=keystone, cloud=cloud, path_prefix=path_prefix)
@@ -373,26 +386,30 @@ class IronClient(object):
             return timestamp
         return datetime.fromtimestamp(float(timestamp))
 
-def configFromFile(config, path, product=None):
+def configFromFile(config, path, product=None, env=None):
     if path is None:
         return config
     if not os.path.exists(path):
         return config
+
     try:
-        file = open(path, "r")
+        with open(path, "r") as f:
+            raw = json.loads(f.read())
+            for k in raw.keys():
+                if k in config:
+                    config[k] = raw[k]
+            if product is not None:
+                if product in raw:
+                    for k in raw[product].keys():
+                        config[k] = raw[product][k]
+            if env is not None:
+                if env in raw:
+                    for k in raw[env].keys():
+                        config[k] = raw[env][k]
+
     except IOError:
         return config
 
-    raw = json.loads(file.read())
-    file.close()
-
-    for k in raw.keys():
-        if k in config:
-            config[k] = raw[k]
-    if product is not None:
-        if product in raw:
-            for k in raw[product].keys():
-                config[k] = raw[product][k]
     return config
 
 
