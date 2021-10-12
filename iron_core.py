@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import time
 from datetime import datetime
 import os
@@ -16,7 +15,7 @@ except:
     import simplejson as json
 
 
-class IronTokenProvider(object):
+class IronTokenProvider:
     def __init__(self, token):
         self.token = token
 
@@ -24,7 +23,7 @@ class IronTokenProvider(object):
         return self.token
 
 
-class KeystoneTokenProvider(object):
+class KeystoneTokenProvider:
     def __init__(self, keystone):
         self.server = keystone["server"] + ("" if keystone["server"].endswith("/") else "/")
         self.tenant = keystone["tenant"]
@@ -65,7 +64,7 @@ class KeystoneTokenProvider(object):
         return self.token
 
 
-class IronClient(object):
+class IronClient:
     __version__ = "1.2.0"
 
     def __init__(self, name, version, product, host=None, project_id=None,
@@ -137,7 +136,7 @@ class IronClient(object):
 
         for field in required_fields:
             if config[field] is None:
-                raise ValueError("No %s set. %s is a required field." % (field, field))
+                raise ValueError(f"No {field} set. {field} is a required field.")
 
         keystone_configured = False
         if config["keystone"] is not None:
@@ -169,7 +168,7 @@ class IronClient(object):
 
         self.headers = {
                 "Accept": "application/json",
-                "User-Agent": "%s (version: %s)" % (self.name, self.version)
+                "User-Agent": f"{self.name} (version: {self.version})"
         }
         self.path_prefix = config["path_prefix"]
 
@@ -182,9 +181,9 @@ class IronClient(object):
             self.path_prefix = url.path.rstrip("/")
 
         if self.protocol == "https" and self.port == 443:
-            self.base_url = "%s://%s%s/%s/" % (self.protocol, self.host, self.path_prefix, self.api_version)
+            self.base_url = f"{self.protocol}://{self.host}{self.path_prefix}/{self.api_version}/"
         else:
-            self.base_url = "%s://%s:%s%s/%s/" % (self.protocol, self.host,
+            self.base_url = "{}://{}:{}{}/{}/".format(self.protocol, self.host,
                                                 self.port, self.path_prefix, self.api_version)
         if self.project_id:
             self.base_url += "projects/%s/" % self.project_id
@@ -228,9 +227,9 @@ class IronClient(object):
             headers = self.headers
 
         if not sys.version_info >= (3,) and headers:
-            headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
-                            v.encode('ascii') if isinstance(v, unicode) else v)
-                           for k, v in headers.items())
+            headers = {k.encode('ascii') if isinstance(k, unicode) else k:
+                            v.encode('ascii') if isinstance(v, unicode) else v
+                           for k, v in headers.items()}
 
         url = self.base_url + url
         if not sys.version_info >= (3,):
@@ -380,8 +379,8 @@ def configFromFile(config, path, product=None):
     if not os.path.exists(path):
         return config
     try:
-        file = open(path, "r")
-    except IOError:
+        file = open(path)
+    except OSError:
         return config
 
     raw = json.loads(file.read())
@@ -401,7 +400,7 @@ def configFromEnv(config, product=None):
     if product is None:
         product = "iron"
     for k in config.keys():
-        key = "%s_%s" % (product, k)
+        key = f"{product}_{k}"
         if key.upper() in os.environ:
             config[k] = os.environ[key.upper()]
     return config

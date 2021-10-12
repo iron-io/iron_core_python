@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 from setuptools import setup
-import sys
 
 setup(
         name = "iron-core",
