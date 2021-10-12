@@ -219,16 +219,7 @@ class IronClient:
         else:
             headers = self.headers
 
-        if not sys.version_info >= (3,) and headers:
-            headers = {k.encode('ascii') if isinstance(k, unicode) else k:
-                            v.encode('ascii') if isinstance(v, unicode) else v
-                           for k, v in headers.items()}
-
         url = self.base_url + url
-        if not sys.version_info >= (3,):
-            if isinstance(url, unicode):
-                url = url.encode('ascii')
-
         r = self._doRequest(url, method, body, headers)
 
         retry_http_codes = [503, 504]
