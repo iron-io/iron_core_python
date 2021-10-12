@@ -38,12 +38,6 @@ class TestConfig(unittest.TestCase):
                 version="0.1.0", product="iron_worker", api_version=2,
                 host="worker-aws-us-east-1.iron.io", token="TEST")
 
-    def test_fromArgsProtocolPortMismatch(self):
-        self.assertRaises(ValueError, iron_core.IronClient, name="Test",
-                version="0.1.0", product="iron_worker", token="TEST",
-                api_version=2, project_id="TEST", port=80,
-                host="worker-aws-us-east-1.iron.io")
-
     def test_fromArgsBareMinimum(self):
         client = iron_core.IronClient(name="Test", version="0.1.0",
                 product="iron_worker", token="TEST", project_id="TEST2",
