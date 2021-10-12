@@ -1,10 +1,6 @@
 from setuptools import setup
 import sys
 
-python3_setup = {}
-if sys.version_info >= (3,):
-        python3_setup['use_2to3'] = True
-
 setup(
         name = "iron-core",
         py_modules = ["iron_core"],
@@ -36,5 +32,4 @@ This package offers common functions for Iron.io APIs and services. It does not 
 any APIs or contain API-specific features, but serves as a common base that wrappers
 may be built on. Users looking for API wrappers should instead look at 
 iron_worker_python and iron_worker_mq.""",
-        **python3_setup
 )
