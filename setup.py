@@ -10,6 +10,7 @@ setup(
         author_email = "thirdparty@iron.io",
         url = "https://www.github.com/iron-io/iron_core_python",
         keywords = ["Iron.io"],
+        python_requires=">=3.6",
         classifiers = [
                 "Programming Language :: Python",
                 "Programming Language :: Python :: 3",
