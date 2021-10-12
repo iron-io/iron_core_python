@@ -214,7 +214,7 @@ class TestConfig(unittest.TestCase):
         keystone_required_keys = ["server", "tenant", "username", "password"]
         config_keystone_keys = client.keystone.keys()
 
-        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+        self.assertCountEqual(config_keystone_keys, keystone_required_keys)
         self.assertEqual(client.project_id, test_keystone_config["project_id"])
 
         remove_test_config("test_keystone_config.json")
@@ -233,7 +233,7 @@ class TestConfig(unittest.TestCase):
         keystone_required_keys = ["server", "tenant", "username", "password"]
         config_keystone_keys = client.keystone.keys()
 
-        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+        self.assertCountEqual(config_keystone_keys, keystone_required_keys)
 
     def test_ironTokenProvider(self):
         client = iron_core.IronTokenProvider("iron-token")
