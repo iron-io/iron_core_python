@@ -186,11 +186,11 @@ class IronClient:
             self.base_url = "{}://{}:{}{}/{}/".format(self.protocol, self.host,
                                                 self.port, self.path_prefix, self.api_version)
         if self.project_id:
-            self.base_url += "projects/%s/" % self.project_id
+            self.base_url += f"projects/{self.project_id}/"
 
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
-            headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+            headers["Authorization"] = f"OAuth {self.token_provider.getToken()}"
 
         if method == "GET":
             r = requests.get(url, headers=headers)
