@@ -25,7 +25,6 @@ class KeystoneTokenProvider:
         self.token = None
         self.local_expires_at_timestamp = 0
 
-
     def getToken(self):
         date_diff = time.mktime(datetime.now().timetuple()) - self.local_expires_at_timestamp
         if self.token is None or date_diff > -10:
@@ -84,34 +83,34 @@ class IronClient:
                        None.
         """
         config = {
-                "host": None,
-                "protocol": "https",
-                "port": 443,
-                "api_version": None,
-                "project_id": None,
-                "token": None,
-                "keystone": None,
-                "path_prefix": None,
-                "cloud": None,
+            "host": None,
+            "protocol": "https",
+            "port": 443,
+            "api_version": None,
+            "project_id": None,
+            "token": None,
+            "keystone": None,
+            "path_prefix": None,
+            "cloud": None,
         }
         products = {
-                "iron_worker": {
-                    "host": "worker-aws-us-east-1.iron.io",
-                    "version": 2
-                },
-                "iron_mq": {
-                    "host": "mq-aws-us-east-1-1.iron.io",
-                    "version": 3
-                },
-                "iron_cache": {
-                    "host": "cache-aws-us-east-1.iron.io",
-                    "version": 1
-                }
+            "iron_worker": {
+                "host": "worker-aws-us-east-1.iron.io",
+                "version": 2
+            },
+            "iron_mq": {
+                "host": "mq-aws-us-east-1-1.iron.io",
+                "version": 3
+            },
+            "iron_cache": {
+                "host": "cache-aws-us-east-1.iron.io",
+                "version": 1
+            }
         }
         if product in products:
             config["host"] = products[product]["host"]
             config["api_version"] = products[product]["version"]
-        
+
         try:
             config = configFromFile(config,
                     os.path.expanduser("~/.iron.json"), product)
@@ -145,8 +144,6 @@ class IronClient:
         if config["token"] is None and not keystone_configured:
             raise ValueError("At least one of token or keystone should be specified.")
 
-
-
         self.name = name
         self.version = version
         self.product = product
@@ -160,8 +157,8 @@ class IronClient:
         self.cloud = config["cloud"]
 
         self.headers = {
-                "Accept": "application/json",
-                "User-Agent": f"{self.name} (version: {self.version})"
+            "Accept": "application/json",
+            "User-Agent": f"{self.name} (version: {self.version})"
         }
         self.path_prefix = config["path_prefix"]
 
@@ -357,6 +354,7 @@ class IronClient:
             return timestamp
         return datetime.fromtimestamp(float(timestamp))
 
+
 def configFromFile(config, path, product=None):
     if path is None:
         return config
@@ -395,6 +393,7 @@ def configFromArgs(config, **kwargs):
         if kwargs[k] is not None:
             config[k] = kwargs[k]
     return config
+
 
 def intersect(a, b):
     return list(set(a) & set(b))
