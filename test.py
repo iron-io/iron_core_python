@@ -1,12 +1,9 @@
-import iron_core
-import unittest
+import json
 import os
-from iron_core import KeystoneTokenProvider
+import unittest
 
-try:
-    import json
-except:
-    import simplejson as json
+import iron_core
+
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
@@ -255,7 +252,7 @@ class TestConfig(unittest.TestCase):
             "username": "keystone-username",
             "password": "keystone-password"
         }
-        keystone = KeystoneTokenProvider(keystone_data)
+        keystone = iron_core.KeystoneTokenProvider(keystone_data)
         self.assertEqual("http://localhost/", keystone.server)
 
 def create_test_config(filename, content):

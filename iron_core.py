@@ -1,18 +1,11 @@
+import dateutil.parser
+import json
+import os
+import requests
+import sys
 import time
 from datetime import datetime
-import os
-import sys
-import dateutil.parser
-import requests
-try:
-    from urlparse import urlparse
-except:
-    from urllib.parse import urlparse
-
-try:
-    import json
-except:
-    import simplejson as json
+from urllib.parse import urlparse
 
 
 class IronTokenProvider:
