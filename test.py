@@ -1,12 +1,9 @@
-import iron_core
-import unittest
+import json
 import os
-from iron_core import KeystoneTokenProvider
+import unittest
 
-try:
-    import json
-except:
-    import simplejson as json
+import iron_core
+
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
@@ -41,12 +38,6 @@ class TestConfig(unittest.TestCase):
                 version="0.1.0", product="iron_worker", api_version=2,
                 host="worker-aws-us-east-1.iron.io", token="TEST")
 
-    def test_fromArgsProtocolPortMismatch(self):
-        self.assertRaises(ValueError, iron_core.IronClient, name="Test",
-                version="0.1.0", product="iron_worker", token="TEST",
-                api_version=2, project_id="TEST", port=80,
-                host="worker-aws-us-east-1.iron.io")
-
     def test_fromArgsBareMinimum(self):
         client = iron_core.IronClient(name="Test", version="0.1.0",
                 product="iron_worker", token="TEST", project_id="TEST2",
@@ -72,12 +63,12 @@ class TestConfig(unittest.TestCase):
 
     def test_fromArgsConfigFileGlobal(self):
         test_config = {
-                "host": "test-config-host",
-                "protocol": "test-config-protocol",
-                "port": "test-config-port",
-                "api_version": "test-config-api-version",
-                "project_id": "test-config-project-id",
-                "token": "test-config-token"
+            "host": "test-config-host",
+            "protocol": "test-config-protocol",
+            "port": "test-config-port",
+            "api_version": "test-config-api-version",
+            "project_id": "test-config-project-id",
+            "token": "test-config-token"
         }
 
         file = open("test_config.json", "w")
@@ -98,74 +89,74 @@ class TestConfig(unittest.TestCase):
 
     def test_fromArgsConfigFileProduct(self):
         test_config = {
-                "iron_worker": {
-                    "host": "test-config-host",
-                    "protocol": "test-config-protocol",
-                    "port": "test-config-port",
-                    "api_version": "test-config-api-version",
-                    "project_id": "test-config-project-id",
-                    "token": "test-config-token"
-                }
-        }
-
-        file = open("test_config.json", "w")
-        file.write(json.dumps(test_config))
-        file.close()
-
-        client = iron_core.IronClient(name="Test", version="0.1.0",
-                product="iron_worker", config_file="test_config.json")
-
-        self.assertEqual(client.host, test_config["iron_worker"]["host"])
-        self.assertEqual(client.protocol,
-                test_config["iron_worker"]["protocol"])
-        self.assertEqual(client.port, test_config["iron_worker"]["port"])
-        self.assertEqual(client.api_version,
-                test_config["iron_worker"]["api_version"])
-        self.assertEqual(client.project_id,
-                test_config["iron_worker"]["project_id"])
-        self.assertEqual(client.token, test_config["iron_worker"]["token"])
-
-        os.remove("test_config.json")
-
-    def test_fromArgsConfigFileMixed(self):
-        test_config = {
-                "host": "test-config-host-global",
-                "protocol": "test-config-protocol-global",
-                "port": "test-config-port-global",
-                "project_id": "test-config-project-id-global",
-                "iron_worker": {
-                    "api_version": "test-config-api-version-product",
-                    "project_id": "test-config-project-id-product",
-                    "token": "test-config-token-product"
-                }
-        }
-
-        file = open("test_config.json", "w")
-        file.write(json.dumps(test_config))
-        file.close()
-
-        client = iron_core.IronClient(name="Test", version="0.1.0",
-                product="iron_worker", config_file="test_config.json")
-
-        self.assertEqual(client.host, test_config["host"])
-        self.assertEqual(client.protocol, test_config["protocol"])
-        self.assertEqual(client.port, test_config["port"])
-        self.assertEqual(client.api_version,
-                test_config["iron_worker"]["api_version"])
-        self.assertEqual(client.project_id,
-                test_config["iron_worker"]["project_id"])
-        self.assertEqual(client.token, test_config["iron_worker"]["token"])
-
-        os.remove("test_config.json")
-
-    def test_fromArgsAndArgsConfigFile(self):
-        test_config = {
+            "iron_worker": {
                 "host": "test-config-host",
                 "protocol": "test-config-protocol",
                 "port": "test-config-port",
                 "api_version": "test-config-api-version",
                 "project_id": "test-config-project-id",
                 "token": "test-config-token"
+            }
+        }
+
+        file = open("test_config.json", "w")
+        file.write(json.dumps(test_config))
+        file.close()
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                                      product="iron_worker", config_file="test_config.json")
+
+        self.assertEqual(client.host, test_config["iron_worker"]["host"])
+        self.assertEqual(client.protocol,
+                         test_config["iron_worker"]["protocol"])
+        self.assertEqual(client.port, test_config["iron_worker"]["port"])
+        self.assertEqual(client.api_version,
+                         test_config["iron_worker"]["api_version"])
+        self.assertEqual(client.project_id,
+                         test_config["iron_worker"]["project_id"])
+        self.assertEqual(client.token, test_config["iron_worker"]["token"])
+
+        os.remove("test_config.json")
+
+    def test_fromArgsConfigFileMixed(self):
+        test_config = {
+            "host": "test-config-host-global",
+            "protocol": "test-config-protocol-global",
+            "port": "test-config-port-global",
+            "project_id": "test-config-project-id-global",
+            "iron_worker": {
+                "api_version": "test-config-api-version-product",
+                "project_id": "test-config-project-id-product",
+                "token": "test-config-token-product"
+            }
+        }
+
+        file = open("test_config.json", "w")
+        file.write(json.dumps(test_config))
+        file.close()
+
+        client = iron_core.IronClient(name="Test", version="0.1.0",
+                                      product="iron_worker", config_file="test_config.json")
+
+        self.assertEqual(client.host, test_config["host"])
+        self.assertEqual(client.protocol, test_config["protocol"])
+        self.assertEqual(client.port, test_config["port"])
+        self.assertEqual(client.api_version,
+                         test_config["iron_worker"]["api_version"])
+        self.assertEqual(client.project_id,
+                         test_config["iron_worker"]["project_id"])
+        self.assertEqual(client.token, test_config["iron_worker"]["token"])
+
+        os.remove("test_config.json")
+
+    def test_fromArgsAndArgsConfigFile(self):
+        test_config = {
+            "host": "test-config-host",
+            "protocol": "test-config-protocol",
+            "port": "test-config-port",
+            "api_version": "test-config-api-version",
+            "project_id": "test-config-project-id",
+            "token": "test-config-token"
         }
 
         file = open("test_config.json", "w")
@@ -223,7 +214,7 @@ class TestConfig(unittest.TestCase):
         keystone_required_keys = ["server", "tenant", "username", "password"]
         config_keystone_keys = client.keystone.keys()
 
-        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+        self.assertCountEqual(config_keystone_keys, keystone_required_keys)
         self.assertEqual(client.project_id, test_keystone_config["project_id"])
 
         remove_test_config("test_keystone_config.json")
@@ -242,7 +233,7 @@ class TestConfig(unittest.TestCase):
         keystone_required_keys = ["server", "tenant", "username", "password"]
         config_keystone_keys = client.keystone.keys()
 
-        self.assertItemsEqual(config_keystone_keys, keystone_required_keys)
+        self.assertCountEqual(config_keystone_keys, keystone_required_keys)
 
     def test_ironTokenProvider(self):
         client = iron_core.IronTokenProvider("iron-token")
@@ -255,16 +246,19 @@ class TestConfig(unittest.TestCase):
             "username": "keystone-username",
             "password": "keystone-password"
         }
-        keystone = KeystoneTokenProvider(keystone_data)
+        keystone = iron_core.KeystoneTokenProvider(keystone_data)
         self.assertEqual("http://localhost/", keystone.server)
+
 
 def create_test_config(filename, content):
     file = open(filename, "w")
     file.write(json.dumps(content))
     file.close()
 
+
 def remove_test_config(filename):
     os.remove(filename)
+
 
 if __name__ == "__main__":
     unittest.main()

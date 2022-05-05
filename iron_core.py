@@ -1,21 +1,14 @@
+import dateutil.parser
+import json
+import os
+import requests
+import sys
 import time
 from datetime import datetime
-import os
-import sys
-import dateutil.parser
-import requests
-try:
-    from urlparse import urlparse
-except:
-    from urllib.parse import urlparse
-
-try:
-    import json
-except:
-    import simplejson as json
+from urllib.parse import urlparse
 
 
-class IronTokenProvider(object):
+class IronTokenProvider:
     def __init__(self, token):
         self.token = token
 
@@ -23,7 +16,7 @@ class IronTokenProvider(object):
         return self.token
 
 
-class KeystoneTokenProvider(object):
+class KeystoneTokenProvider:
     def __init__(self, keystone):
         self.server = keystone["server"] + ("" if keystone["server"].endswith("/") else "/")
         self.tenant = keystone["tenant"]
@@ -31,7 +24,6 @@ class KeystoneTokenProvider(object):
         self.password = keystone["password"]
         self.token = None
         self.local_expires_at_timestamp = 0
-
 
     def getToken(self):
         date_diff = time.mktime(datetime.now().timetuple()) - self.local_expires_at_timestamp
@@ -64,7 +56,7 @@ class KeystoneTokenProvider(object):
         return self.token
 
 
-class IronClient(object):
+class IronClient:
     __version__ = "1.2.0"
 
     def __init__(self, name, version, product, host=None, project_id=None,
@@ -91,34 +83,34 @@ class IronClient(object):
                        None.
         """
         config = {
-                "host": None,
-                "protocol": "https",
-                "port": 443,
-                "api_version": None,
-                "project_id": None,
-                "token": None,
-                "keystone": None,
-                "path_prefix": None,
-                "cloud": None,
+            "host": None,
+            "protocol": "https",
+            "port": 443,
+            "api_version": None,
+            "project_id": None,
+            "token": None,
+            "keystone": None,
+            "path_prefix": None,
+            "cloud": None,
         }
         products = {
-                "iron_worker": {
-                    "host": "worker-aws-us-east-1.iron.io",
-                    "version": 2
-                },
-                "iron_mq": {
-                    "host": "mq-aws-us-east-1-1.iron.io",
-                    "version": 3
-                },
-                "iron_cache": {
-                    "host": "cache-aws-us-east-1.iron.io",
-                    "version": 1
-                }
+            "iron_worker": {
+                "host": "worker-aws-us-east-1.iron.io",
+                "version": 2
+            },
+            "iron_mq": {
+                "host": "mq-aws-us-east-1-1.iron.io",
+                "version": 3
+            },
+            "iron_cache": {
+                "host": "cache-aws-us-east-1.iron.io",
+                "version": 1
+            }
         }
         if product in products:
             config["host"] = products[product]["host"]
             config["api_version"] = products[product]["version"]
-        
+
         try:
             config = configFromFile(config,
                     os.path.expanduser("~/.iron.json"), product)
@@ -136,7 +128,7 @@ class IronClient(object):
 
         for field in required_fields:
             if config[field] is None:
-                raise ValueError("No %s set. %s is a required field." % (field, field))
+                raise ValueError(f"No {field} set. {field} is a required field.")
 
         keystone_configured = False
         if config["keystone"] is not None:
@@ -152,8 +144,6 @@ class IronClient(object):
         if config["token"] is None and not keystone_configured:
             raise ValueError("At least one of token or keystone should be specified.")
 
-
-
         self.name = name
         self.version = version
         self.product = product
@@ -167,8 +157,8 @@ class IronClient(object):
         self.cloud = config["cloud"]
 
         self.headers = {
-                "Accept": "application/json",
-                "User-Agent": "%s (version: %s)" % (self.name, self.version)
+            "Accept": "application/json",
+            "User-Agent": f"{self.name} (version: {self.version})"
         }
         self.path_prefix = config["path_prefix"]
 
@@ -181,16 +171,16 @@ class IronClient(object):
             self.path_prefix = url.path.rstrip("/")
 
         if self.protocol == "https" and self.port == 443:
-            self.base_url = "%s://%s%s/%s/" % (self.protocol, self.host, self.path_prefix, self.api_version)
+            self.base_url = f"{self.protocol}://{self.host}{self.path_prefix}/{self.api_version}/"
         else:
-            self.base_url = "%s://%s:%s%s/%s/" % (self.protocol, self.host,
+            self.base_url = "{}://{}:{}{}/{}/".format(self.protocol, self.host,
                                                 self.port, self.path_prefix, self.api_version)
         if self.project_id:
-            self.base_url += "projects/%s/" % self.project_id
+            self.base_url += f"projects/{self.project_id}/"
 
     def _doRequest(self, url, method, body="", headers={}):
         if self.token or self.keystone:
-            headers["Authorization"] = "OAuth %s" % self.token_provider.getToken()
+            headers["Authorization"] = f"OAuth {self.token_provider.getToken()}"
 
         if method == "GET":
             r = requests.get(url, headers=headers)
@@ -226,16 +216,7 @@ class IronClient(object):
         else:
             headers = self.headers
 
-        if not sys.version_info >= (3,) and headers:
-            headers = dict((k.encode('ascii') if isinstance(k, unicode) else k,
-                            v.encode('ascii') if isinstance(v, unicode) else v)
-                           for k, v in headers.items())
-
         url = self.base_url + url
-        if not sys.version_info >= (3,):
-            if isinstance(url, unicode):
-                url = url.encode('ascii')
-
         r = self._doRequest(url, method, body, headers)
 
         retry_http_codes = [503, 504]
@@ -373,14 +354,15 @@ class IronClient(object):
             return timestamp
         return datetime.fromtimestamp(float(timestamp))
 
+
 def configFromFile(config, path, product=None):
     if path is None:
         return config
     if not os.path.exists(path):
         return config
     try:
-        file = open(path, "r")
-    except IOError:
+        file = open(path)
+    except OSError:
         return config
 
     raw = json.loads(file.read())
@@ -400,7 +382,7 @@ def configFromEnv(config, product=None):
     if product is None:
         product = "iron"
     for k in config.keys():
-        key = "%s_%s" % (product, k)
+        key = f"{product}_{k}"
         if key.upper() in os.environ:
             config[k] = os.environ[key.upper()]
     return config
@@ -411,6 +393,7 @@ def configFromArgs(config, **kwargs):
         if kwargs[k] is not None:
             config[k] = kwargs[k]
     return config
+
 
 def intersect(a, b):
     return list(set(a) & set(b))
